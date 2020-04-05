@@ -20,7 +20,6 @@ before_script:
   - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
   - ln -svf $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME
   - cd $GOPATH/src/$REPO_NAME
-  - go get
 
 stages:
   - test
@@ -29,12 +28,16 @@ stages:
 
 format:
   stage: test
+  before_script:
+    - go get
   script:
     - go fmt $(go list ./... | grep -v /vendor/)
     - go vet $(go list ./... | grep -v /vendor/)
 
 compile:
   stage: build
+  before_script:
+    - go get
   script:
     - go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/main
   artifacts:
@@ -45,6 +48,11 @@ compile:
 
 release:
   stage: deploy
+  variables:
+    GIT_STRATEGY: none
+  image: alpine:3.11.3
+  before_script:
+    - apk add -U zip
   script:
     - zip function.zip main
   artifacts:
