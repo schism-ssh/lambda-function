@@ -15,7 +15,7 @@ stages:
     REPO_NAME: $CI_SERVER_HOST/$CI_PROJECT_PATH
     GOOS: linux
     GOARCH: amd64
-    SCHISM_BIN: schism-lambda-${CI_COMMIT_REF}
+    SCHISM_BIN: schism-lambda-${CI_COMMIT_REF_NAME}
 
 .go-jobs:
   # The problem is that to be able to use go get, one needs to put
