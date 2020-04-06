@@ -64,7 +64,7 @@ release:
     - pip3 install awscli
   script:
     - zip "${SCHISM_BIN}".zip "${SCHISM_BIN}"
-    - echo aws s3 sync . s3://$RELEASE_PATH/${SCHISM_BIN}.zip --exclude "*" --include "${SCHISM_BIN}.zip"
+    - aws s3 sync . s3://$RELEASE_PATH/${SCHISM_BIN}.zip --exclude "*" --include "${SCHISM_BIN}.zip"
   dependencies:
     - compile
   rules:
