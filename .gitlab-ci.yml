@@ -67,7 +67,7 @@ release:
     - echo aws s3 sync . s3://$RELEASE_PATH/${SCHISM_BIN}.zip --exclude "*" --include "${SCHISM_BIN}.zip"
   dependencies:
     - compile
-  rules:
-    - if: $CI_COMMIT_REF_PROTECTED
-      when: always
-    - when: never
+#  rules:
+#    - if: $CI_COMMIT_REF_PROTECTED == "true"
+#      when: always
+#    - when: never
