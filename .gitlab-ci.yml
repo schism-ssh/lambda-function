@@ -1,6 +1,6 @@
 # This file is a template, and might need editing before it works on your project.
 default:
-  image: golang:1.14.1-buster
+  image: img.doom.fm/build/golang:v0.1.0-1.14.1-buster
   tags:
     - shared-exec-docker
 
@@ -58,10 +58,6 @@ release:
     - .global-vars
   variables:
     GIT_STRATEGY: none
-  image: alpine:3.11.3
-  before_script:
-    - apk add -U zip python3
-    - pip3 install awscli
   script:
     - zip "${SCHISM_BIN}".zip "${SCHISM_BIN}"
     - aws s3 sync . s3://$RELEASE_PATH/${SCHISM_BIN}.zip --exclude "*" --include "${SCHISM_BIN}.zip"
