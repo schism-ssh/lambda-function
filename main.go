@@ -77,12 +77,16 @@ func createCA() []byte {
 }
 
 func saveCAToSSM(caContents []byte, caParamName string) {
-	_, err := ssmClient.PutParameter(&ssm.PutParameterInput{
+	putParamInput := &ssm.PutParameterInput{
 		Name:        aws.String(caParamName),
 		Description: aws.String("CA Certificate used to sign ssh certificates"),
 		Value:       aws.String(string(caContents)),
 		Type:        aws.String("SecureString"),
-	})
+	}
+	if len(ssmKmsKeyId) > 0 {
+		putParamInput.KeyId = aws.String(ssmKmsKeyId)
+	}
+	_, err := ssmClient.PutParameter(putParamInput)
 	if err != nil {
 		errLogger.Printf("Error: %s Unable to save data to SSM", err.Error())
 	}

@@ -8,6 +8,7 @@ stages:
   - test
   - build
   - deploy
+
 .global-vars:
   # There's several ways to do this and I like this one
   variables:
@@ -49,6 +50,7 @@ compile:
   artifacts:
     paths:
       - ${SCHISM_BIN}
+    expire_in: 1 hour
   dependencies:
     - format
 
