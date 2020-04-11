@@ -62,7 +62,7 @@ release:
     GIT_STRATEGY: none
   script:
     - zip "${SCHISM_BIN}".zip "${SCHISM_BIN}"
-    - aws s3 sync . s3://$RELEASE_PATH --exclude "*" --include "${SCHISM_BIN}.zip"
+    - sh .ci/publish
   dependencies:
     - compile
   rules:

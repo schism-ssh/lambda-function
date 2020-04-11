@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+aws s3 cp "${SCHISM_BIN}.zip" "s3://${RELEASE_PATH}/${SCHISM_BIN}.zip" \
+          --grant read="${RELEASE_APPROVED_IDS}"
