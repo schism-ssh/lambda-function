@@ -1,6 +1,6 @@
 # This file is a template, and might need editing before it works on your project.
 default:
-  image: img.doom.fm/build/golang:v0.1.0-1.14.1-buster
+  image: img.doom.fm/build/golang:latest-1.14.2-buster
   tags:
     - shared-exec-docker
 
