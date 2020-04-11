@@ -42,19 +42,6 @@ func init() {
 	userCaParamName = caParamName("user")
 
 	ssmKmsKeyId = os.Getenv("SCHISM_CA_KMS_KEY_ID")
-
-	ssmClient = newSsmClient()
-
-	hostCA, userCA = loadCAsFromSSM()
-
-	if hostCA == nil {
-		hostCA = createCA()
-		saveCAToSSM(hostCA, hostCaParamName)
-	}
-	if userCA == nil {
-		userCA = createCA()
-		saveCAToSSM(userCA, userCaParamName)
-	}
 }
 
 func caParamName(caType string) string {
@@ -64,6 +51,21 @@ func caParamName(caType string) string {
 		caParamName = fmt.Sprintf("schism-%s-ca-key", strings.ToLower(caType))
 	}
 	return caParamName
+}
+
+func handlerInit() {
+	invokeCount = invokeCount + 1
+
+	ssmClient = newSsmClient()
+	hostCA, userCA = loadCAsFromSSM()
+	if hostCA == nil {
+		hostCA = createCA()
+		saveCAToSSM(hostCA, hostCaParamName)
+	}
+	if userCA == nil {
+		userCA = createCA()
+		saveCAToSSM(userCA, userCaParamName)
+	}
 }
 
 func createCA() []byte {
@@ -117,7 +119,7 @@ func newSsmClient() *ssm.SSM {
 }
 
 func LambdaHandler() (int, error) {
-	invokeCount = invokeCount + 1
+	handlerInit()
 	logger.Printf("Region: `%s'", awsRegion)
 	return invokeCount, nil
 }
