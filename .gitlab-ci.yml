@@ -50,6 +50,7 @@ compile:
   artifacts:
     paths:
       - ${SCHISM_BIN}
+      - .ci/publish
     expire_in: 1 hour
   dependencies:
     - format
