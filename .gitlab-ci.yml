@@ -31,7 +31,7 @@ stages:
     - cd $GOPATH/src/$REPO_NAME
     - go get -v ./...
 
-format:
+fmt-vet-test:
   stage: test
   extends:
     - .global-vars
