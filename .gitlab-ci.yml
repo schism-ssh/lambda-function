@@ -54,7 +54,7 @@ compile:
       - .ci/publish
     expire_in: 1 hour
   dependencies:
-    - format
+    - fmt-vet-test
 
 release:
   stage: deploy
