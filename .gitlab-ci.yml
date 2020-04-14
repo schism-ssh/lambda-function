@@ -32,9 +32,9 @@ fmt-vet-test:
   before_script:
     - go mod vendor
   script:
-    - go fmt $(go list ./... | grep -v /vendor/)
-    - go vet $(go list ./... | grep -v /vendor/)
-    - go test -cover -test.v
+    - go fmt ./...
+    - go vet ./...
+    - go test -cover -test.v ./...
 
 compile:
   stage: build
@@ -42,7 +42,7 @@ compile:
     - .global-vars
     - .go-cache
   script:
-    - go build -ldflags "-extldflags '-static'" -o "${CI_PROJECT_DIR}/${SCHISM_BIN}" $(go list ./... | grep /cmd/)
+    - go build -ldflags "-extldflags '-static'" -o "${CI_PROJECT_DIR}/${SCHISM_BIN}" ./cmd...
     - zip "${SCHISM_BIN}".zip "${SCHISM_BIN}"
   artifacts:
     paths:
