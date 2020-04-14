@@ -10,10 +10,7 @@ stages:
   - deploy
 
 .global-vars:
-  # There's several ways to do this and I like this one
   variables:
-    # Please edit to your GitLab project
-    REPO_NAME: $CI_SERVER_HOST/$CI_PROJECT_PATH
     GOOS: linux
     GOARCH: amd64
     SCHISM_BIN: schism-lambda-${CI_COMMIT_REF_NAME}
@@ -45,7 +42,7 @@ compile:
     - .global-vars
     - .go-cache
   script:
-    - go build -ldflags "-extldflags '-static'" -o "${CI_PROJECT_DIR}/${SCHISM_BIN}"
+    - go build -ldflags "-extldflags '-static'" -o "${CI_PROJECT_DIR}/${SCHISM_BIN}" $(go list ./... | grep /cmd/)
     - zip "${SCHISM_BIN}".zip "${SCHISM_BIN}"
   artifacts:
     paths:
