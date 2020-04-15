@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/aws/aws-sdk-go/service/ssm/ssmiface"
 	"github.com/mikesmitty/edkey"
 	"log"
 	"os"
 	"strings"
+
+	"src.doom.fm/schism/commonLib"
 )
 
 var (
@@ -22,8 +23,7 @@ var (
 	errLogger    *log.Logger
 	loggerPrefix = "[schism-lambda] : "
 
-	awsSession *session.Session
-	awsRegion  string
+	awsRegion string
 
 	hostCaParamName string
 	userCaParamName string
@@ -101,9 +101,7 @@ func loadCAsFromSSM(ssmSvc ssmiface.SSMAPI) ([]byte, []byte) {
 func handlerInit() {
 	invokeCount = invokeCount + 1
 
-	awsSession = session.Must(session.NewSession())
-
-	ssmClient := ssm.New(awsSession, aws.NewConfig().WithRegion(awsRegion))
+	ssmClient := commonLib.SSMClient(awsRegion)
 	hostCA, userCA = loadCAsFromSSM(ssmClient)
 	if hostCA == nil {
 		hostCA = createCA()
