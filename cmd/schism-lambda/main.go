@@ -79,10 +79,15 @@ func LambdaHandler(requestEvent protocol.RequestSSHCertLambdaPayload) (protocol.
 }
 
 func processEvent(event protocol.RequestSSHCertLambdaPayload, out *protocol.RequestSSHCertLambdaResponse) {
-	if event.CertificateType == "host" {
+	switch event.CertificateType {
+	case "host":
 		out.LookupKey = "HOST_LOOKUP_KEY"
+	case "user":
+		out.LookupKey = "USER_LOOKUP_KEY"
+	default:
+		out.LookupKey = "ERROR"
+
 	}
-	out.LookupKey = "USER_LOOKUP_KEY"
 }
 
 func main() {
