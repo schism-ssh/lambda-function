@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"src.doom.fm/schism/commonLib"
+	"src.doom.fm/schism/commonLib/protocol"
 	"src.doom.fm/schism/lambda-function/lib"
 )
 
@@ -67,10 +68,21 @@ func handlerInit() {
 	}
 }
 
-func LambdaHandler() (int, error) {
+func LambdaHandler(requestEvent protocol.RequestSSHCertLambdaPayload) (protocol.RequestSSHCertLambdaResponse, error) {
 	handlerInit()
-	logger.Printf("Region: `%s'", awsRegion)
-	return invokeCount, nil
+	response := protocol.RequestSSHCertLambdaResponse{}
+	logger.Printf("Processing %s cert generation event\n", requestEvent.CertificateType)
+	logger.Printf("Requested Identity: %s\n", requestEvent.Identity)
+	logger.Printf("Requested Principals: %s\n", requestEvent.Principals)
+	processEvent(requestEvent, &response)
+	return response, nil
+}
+
+func processEvent(event protocol.RequestSSHCertLambdaPayload, out *protocol.RequestSSHCertLambdaResponse) {
+	if event.CertificateType == "host" {
+		out.LookupKey = "HOST_LOOKUP_KEY"
+	}
+	out.LookupKey = "USER_LOOKUP_KEY"
 }
 
 func main() {
