@@ -9,6 +9,7 @@ import (
 	"src.doom.fm/schism/commonLib/protocol"
 	"src.doom.fm/schism/lambda-function/internal"
 	"src.doom.fm/schism/lambda-function/internal/cloud"
+	"src.doom.fm/schism/lambda-function/internal/crypto"
 )
 
 var (
@@ -57,13 +58,13 @@ func handlerInit() {
 		}
 	}
 	if hostCA == nil {
-		hostCA = internal.CreateCA()
+		hostCA = crypto.CreateCA()
 		if err := cloud.SaveCAToSSM(ssmClient, hostCA, hostCaParamName, ssmKmsKeyId); err != nil {
 			errLogger.Printf("Error: %s Unable to save data to SSM", err.Error())
 		}
 	}
 	if userCA == nil {
-		userCA = internal.CreateCA()
+		userCA = crypto.CreateCA()
 		if err := cloud.SaveCAToSSM(ssmClient, userCA, userCaParamName, ssmKmsKeyId); err != nil {
 			errLogger.Printf("Error: %s Unable to save data to SSM", err.Error())
 		}
