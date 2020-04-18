@@ -15,9 +15,8 @@ import (
 var (
 	invokeCount = 0
 
-	logger       *log.Logger
-	errLogger    *log.Logger
-	loggerPrefix = "[schism-lambda] : "
+	logger    *log.Logger
+	errLogger *log.Logger
 
 	awsRegion string
 
@@ -31,8 +30,8 @@ var (
 )
 
 func init() {
-	logger = log.New(os.Stdout, loggerPrefix, log.LstdFlags|log.Lmsgprefix)
-	errLogger = log.New(os.Stderr, loggerPrefix, log.LstdFlags|log.Lmsgprefix)
+	logger = internal.SchismLog(os.Stdout)
+	errLogger = internal.SchismLog(os.Stderr)
 
 	hostCaParamName = internal.CaParamName("host")
 	userCaParamName = internal.CaParamName("user")
