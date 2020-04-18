@@ -1,12 +1,14 @@
 package main
 
 import (
-	"github.com/aws/aws-lambda-go/lambda"
 	"log"
 	"os"
+
+	"github.com/aws/aws-lambda-go/lambda"
 	"src.doom.fm/schism/commonLib"
 	"src.doom.fm/schism/commonLib/protocol"
 	"src.doom.fm/schism/lambda-function/internal"
+	"src.doom.fm/schism/lambda-function/internal/cloud"
 )
 
 var (
@@ -42,7 +44,7 @@ func handlerInit() {
 	invokeCount = invokeCount + 1
 	var errs []error
 	ssmClient := commonLib.SSMClient(awsRegion)
-	hostCA, userCA, errs = internal.LoadCAsFromSSM(ssmClient, &internal.CaParamNames{
+	hostCA, userCA, errs = cloud.LoadCAsFromSSM(ssmClient, &cloud.CaParamNames{
 		Host: hostCaParamName,
 		User: userCaParamName,
 	})
@@ -56,13 +58,13 @@ func handlerInit() {
 	}
 	if hostCA == nil {
 		hostCA = internal.CreateCA()
-		if err := internal.SaveCAToSSM(ssmClient, hostCA, hostCaParamName, ssmKmsKeyId); err != nil {
+		if err := cloud.SaveCAToSSM(ssmClient, hostCA, hostCaParamName, ssmKmsKeyId); err != nil {
 			errLogger.Printf("Error: %s Unable to save data to SSM", err.Error())
 		}
 	}
 	if userCA == nil {
 		userCA = internal.CreateCA()
-		if err := internal.SaveCAToSSM(ssmClient, userCA, userCaParamName, ssmKmsKeyId); err != nil {
+		if err := cloud.SaveCAToSSM(ssmClient, userCA, userCaParamName, ssmKmsKeyId); err != nil {
 			errLogger.Printf("Error: %s Unable to save data to SSM", err.Error())
 		}
 	}

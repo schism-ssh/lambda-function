@@ -1,4 +1,4 @@
-package internal
+package cloud
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
