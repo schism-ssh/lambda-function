@@ -1,8 +1,9 @@
-package lib
+package crypto
 
 import (
 	"crypto/ed25519"
 	"encoding/pem"
+
 	"github.com/mikesmitty/edkey"
 )
 
