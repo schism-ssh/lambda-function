@@ -6,7 +6,7 @@ import (
 	"os"
 	"src.doom.fm/schism/commonLib"
 	"src.doom.fm/schism/commonLib/protocol"
-	"src.doom.fm/schism/lambda-function/lib"
+	"src.doom.fm/schism/lambda-function/internal"
 )
 
 var (
@@ -31,8 +31,8 @@ func init() {
 	logger = log.New(os.Stdout, loggerPrefix, log.LstdFlags|log.Lmsgprefix)
 	errLogger = log.New(os.Stderr, loggerPrefix, log.LstdFlags|log.Lmsgprefix)
 
-	hostCaParamName = lib.CaParamName("host")
-	userCaParamName = lib.CaParamName("user")
+	hostCaParamName = internal.CaParamName("host")
+	userCaParamName = internal.CaParamName("user")
 
 	ssmKmsKeyId = os.Getenv("SCHISM_CA_KMS_KEY_ID")
 	awsRegion = os.Getenv("AWS_REGION")
@@ -42,7 +42,7 @@ func handlerInit() {
 	invokeCount = invokeCount + 1
 	var errs []error
 	ssmClient := commonLib.SSMClient(awsRegion)
-	hostCA, userCA, errs = lib.LoadCAsFromSSM(ssmClient, &lib.CaParamNames{
+	hostCA, userCA, errs = internal.LoadCAsFromSSM(ssmClient, &internal.CaParamNames{
 		Host: hostCaParamName,
 		User: userCaParamName,
 	})
@@ -55,14 +55,14 @@ func handlerInit() {
 		}
 	}
 	if hostCA == nil {
-		hostCA = lib.CreateCA()
-		if err := lib.SaveCAToSSM(ssmClient, hostCA, hostCaParamName, ssmKmsKeyId); err != nil {
+		hostCA = internal.CreateCA()
+		if err := internal.SaveCAToSSM(ssmClient, hostCA, hostCaParamName, ssmKmsKeyId); err != nil {
 			errLogger.Printf("Error: %s Unable to save data to SSM", err.Error())
 		}
 	}
 	if userCA == nil {
-		userCA = lib.CreateCA()
-		if err := lib.SaveCAToSSM(ssmClient, userCA, userCaParamName, ssmKmsKeyId); err != nil {
+		userCA = internal.CreateCA()
+		if err := internal.SaveCAToSSM(ssmClient, userCA, userCaParamName, ssmKmsKeyId); err != nil {
 			errLogger.Printf("Error: %s Unable to save data to SSM", err.Error())
 		}
 	}
