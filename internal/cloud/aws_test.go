@@ -1,12 +1,13 @@
-package lib
+package cloud
 
 import (
 	"errors"
+	"reflect"
+	"testing"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/aws/aws-sdk-go/service/ssm/ssmiface"
-	"reflect"
-	"testing"
 )
 
 type mockSSMClient struct {
