@@ -1,12 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/service/ssm/ssmiface"
+
 	"src.doom.fm/schism/commonLib"
 	"src.doom.fm/schism/commonLib/protocol"
+
 	"src.doom.fm/schism/lambda-function/internal"
 	"src.doom.fm/schism/lambda-function/internal/cloud"
 	"src.doom.fm/schism/lambda-function/internal/crypto"
@@ -18,60 +22,59 @@ var (
 	logger    *log.Logger
 	errLogger *log.Logger
 
-	awsRegion string
+	awsRegion     string
+	caParamPrefix string
+	ssmKmsKeyId   string
 
-	hostCaParamName string
-	userCaParamName string
-
-	ssmKmsKeyId string
-
-	hostCA []byte
-	userCA []byte
+	hostKeyPair *crypto.CaSshKeyPair
+	userKeyPair *crypto.CaSshKeyPair
 )
 
 func init() {
 	logger = internal.SchismLog(os.Stdout)
 	errLogger = internal.SchismLog(os.Stderr)
 
-	hostCaParamName = internal.CaParamName("host")
-	userCaParamName = internal.CaParamName("user")
+	caParamPrefix = cloud.CaParamPrefix()
 
 	ssmKmsKeyId = os.Getenv("SCHISM_CA_KMS_KEY_ID")
 	awsRegion = os.Getenv("AWS_REGION")
 }
 
-func handlerInit() {
-	invokeCount = invokeCount + 1
-	var errs []error
-	ssmClient := commonLib.SSMClient(awsRegion)
-	hostCA, userCA, errs = cloud.LoadCAsFromSSM(ssmClient, &cloud.CaParamNames{
-		Host: hostCaParamName,
-		User: userCaParamName,
-	})
-	if len(errs) > 0 {
-		for _, err := range errs {
-			if err == nil {
-				continue
-			}
-			errLogger.Printf("Error: %s", err.Error())
+func caKeysInit(ssmSvc ssmiface.SSMAPI) (err error) {
+	hostParamName := fmt.Sprintf("%s-host", caParamPrefix)
+	hostKeyPair, err = cloud.LoadCAFromSSM(ssmSvc, hostParamName)
+	if err != nil {
+		hostKeyPair, err = crypto.CreateCA()
+		if err != nil {
+			return
+		}
+		err = cloud.SaveCAToSSM(ssmSvc, hostKeyPair, hostParamName, ssmKmsKeyId)
+		if err != nil {
+			return
 		}
 	}
-	if hostCA == nil {
-		hostCA = crypto.CreateCA()
-		if err := cloud.SaveCAToSSM(ssmClient, hostCA, hostCaParamName, ssmKmsKeyId); err != nil {
-			errLogger.Printf("Error: %s Unable to save data to SSM", err.Error())
+	userParamName := fmt.Sprintf("%s-user", caParamPrefix)
+	userKeyPair, err = cloud.LoadCAFromSSM(ssmSvc, userParamName)
+	if err != nil {
+		userKeyPair, err = crypto.CreateCA()
+		if err != nil {
+			return
+		}
+		err = cloud.SaveCAToSSM(ssmSvc, userKeyPair, userParamName, ssmKmsKeyId)
+		if err != nil {
+			return
 		}
 	}
-	if userCA == nil {
-		userCA = crypto.CreateCA()
-		if err := cloud.SaveCAToSSM(ssmClient, userCA, userCaParamName, ssmKmsKeyId); err != nil {
-			errLogger.Printf("Error: %s Unable to save data to SSM", err.Error())
-		}
-	}
+	return
 }
 
 func LambdaHandler(requestEvent protocol.RequestSSHCertLambdaPayload) (protocol.RequestSSHCertLambdaResponse, error) {
-	handlerInit()
+	ssmClient := commonLib.SSMClient(awsRegion)
+	if err := caKeysInit(ssmClient); err != nil {
+		errLogger.Printf("Error initializing the CA keys: %v", err.Error())
+	}
+
+	invokeCount = invokeCount + 1
 	response := protocol.RequestSSHCertLambdaResponse{}
 	logger.Printf("Processing %s cert generation event\n", requestEvent.CertificateType)
 	logger.Printf("Requested Identity: %s\n", requestEvent.Identity)
@@ -81,14 +84,10 @@ func LambdaHandler(requestEvent protocol.RequestSSHCertLambdaPayload) (protocol.
 }
 
 func processEvent(event protocol.RequestSSHCertLambdaPayload, out *protocol.RequestSSHCertLambdaResponse) {
-	switch event.CertificateType {
-	case "host":
+	if event.CertificateType == "host" {
 		out.LookupKey = "HOST_LOOKUP_KEY"
-	case "user":
+	} else {
 		out.LookupKey = "USER_LOOKUP_KEY"
-	default:
-		out.LookupKey = "ERROR"
-
 	}
 }
 
