@@ -3,6 +3,7 @@ package cloud
 import (
 	"errors"
 	"reflect"
+	"src.doom.fm/schism/lambda-function/internal/crypto"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -22,7 +23,7 @@ func (m *mockSSMClient) GetParameter(input *ssm.GetParameterInput) (*ssm.GetPara
 	resp := &ssm.GetParameterOutput{
 		Parameter: &ssm.Parameter{
 			Name:  aws.String("valid-param-name"),
-			Value: aws.String("test-value"),
+			Value: aws.String("{\"private_key\":null,\"authorized_key\":null}"),
 		},
 	}
 	if *input.Name == "valid-param-name" {
@@ -32,62 +33,10 @@ func (m *mockSSMClient) GetParameter(input *ssm.GetParameterInput) (*ssm.GetPara
 	}
 }
 
-func TestLoadCAsFromSSM(t *testing.T) {
-	type args struct {
-		ssmSvc ssmiface.SSMAPI
-		params *CaParamNames
-	}
-	tests := []struct {
-		name     string
-		args     args
-		wantHost []byte
-		wantUser []byte
-		wantErrs []bool
-	}{
-		{
-			name: "both params exist in ssm",
-			args: args{
-				ssmSvc: &mockSSMClient{},
-				params: &CaParamNames{Host: "valid-param-name", User: "valid-param-name"},
-			},
-			wantHost: []byte("test-value"), wantUser: []byte("test-value"), wantErrs: []bool{false, false},
-		},
-		{
-			name:     "host ca param is missing",
-			args:     args{ssmSvc: &mockSSMClient{}, params: &CaParamNames{Host: "missing", User: "valid-param-name"}},
-			wantHost: nil, wantUser: []byte("test-value"), wantErrs: []bool{true, false},
-		},
-		{
-			name:     "user ca param is missing",
-			args:     args{ssmSvc: &mockSSMClient{}, params: &CaParamNames{Host: "valid-param-name", User: "missing"}},
-			wantHost: []byte("test-value"), wantUser: nil, wantErrs: []bool{false, true},
-		},
-		{
-			name:     "both ca params are missing",
-			args:     args{ssmSvc: &mockSSMClient{}, params: &CaParamNames{Host: "missing", User: "missing"}},
-			wantHost: nil, wantUser: nil, wantErrs: []bool{true, true},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotHost, gotUser, gotErrs := LoadCAsFromSSM(tt.args.ssmSvc, tt.args.params)
-			if !reflect.DeepEqual(gotHost, tt.wantHost) {
-				t.Errorf("LoadCAsFromSSM() gotHost = %v, want %v", gotHost, tt.wantHost)
-			}
-			if !reflect.DeepEqual(gotUser, tt.wantUser) {
-				t.Errorf("LoadCAsFromSSM() gotUser = %v, want %v", gotUser, tt.wantUser)
-			}
-			if tt.wantErrs[0] != (gotErrs[0] != nil) && tt.wantErrs[1] != (gotErrs[1] != nil) {
-				t.Errorf("LoadCAsFromSSM() gotErrs = %v, want %v", gotErrs, tt.wantErrs)
-			}
-		})
-	}
-}
-
 func TestSaveCAToSSM(t *testing.T) {
 	type args struct {
 		ssmSvc      ssmiface.SSMAPI
-		caContents  []byte
+		caPair      *crypto.CaSshKeyPair
 		caParamName string
 		ssmKmsKeyId string
 	}
@@ -97,11 +46,14 @@ func TestSaveCAToSSM(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "no kms key provided",
+			name: "No KMS Key provided",
 			args: args{
-				ssmSvc:      &mockSSMClient{},
-				caContents:  make([]byte, 1),
-				caParamName: "schism-test-key",
+				ssmSvc: &mockSSMClient{},
+				caPair: &crypto.CaSshKeyPair{
+					PrivateKey:    nil,
+					AuthorizedKey: nil,
+				},
+				caParamName: "schism-ca-key-host",
 				ssmKmsKeyId: "",
 			},
 			wantErr: false,
@@ -109,8 +61,7 @@ func TestSaveCAToSSM(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := SaveCAToSSM(tt.args.ssmSvc, tt.args.caContents, tt.args.caParamName, tt.args.ssmKmsKeyId)
-			if (err != nil) != tt.wantErr {
+			if err := SaveCAToSSM(tt.args.ssmSvc, tt.args.caPair, tt.args.caParamName, tt.args.ssmKmsKeyId); (err != nil) != tt.wantErr {
 				t.Errorf("SaveCAToSSM() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -125,17 +76,24 @@ func TestLoadCAFromSSM(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []byte
+		want    *crypto.CaSshKeyPair
 		wantErr bool
 	}{
 		{
-			name: "Key is present, no errors",
-			args: args{ssmSvc: &mockSSMClient{}, paramName: "valid-param-name"},
-			want: []byte("test-value"), wantErr: false,
+			name: "key exists",
+			args: args{
+				ssmSvc:    &mockSSMClient{},
+				paramName: "valid-param-name",
+			},
+			want:    &crypto.CaSshKeyPair{},
+			wantErr: false,
 		},
 		{
-			name: "Key not found in SSM",
-			args: args{ssmSvc: &mockSSMClient{}, paramName: "non-existent-param"},
+			name: "key is missing",
+			args: args{
+				ssmSvc:    &mockSSMClient{},
+				paramName: "non-existent-param",
+			},
 			want: nil, wantErr: true,
 		},
 	}
