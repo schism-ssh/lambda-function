@@ -1,17 +1,16 @@
 package cloud
 
 import (
+	"encoding/json"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/aws/aws-sdk-go/service/ssm/ssmiface"
+
+	"src.doom.fm/schism/lambda-function/internal/crypto"
 )
 
-type CaParamNames struct {
-	Host string
-	User string
-}
-
-func LoadCAFromSSM(ssmSvc ssmiface.SSMAPI, paramName string) ([]byte, error) {
+func LoadCAFromSSM(ssmSvc ssmiface.SSMAPI, paramName string) (*crypto.CaSshKeyPair, error) {
 	ssmOutput, err := ssmSvc.GetParameter(&ssm.GetParameterInput{
 		Name:           aws.String(paramName),
 		WithDecryption: aws.Bool(true),
@@ -19,30 +18,26 @@ func LoadCAFromSSM(ssmSvc ssmiface.SSMAPI, paramName string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return []byte(*ssmOutput.Parameter.Value), nil
+	rawCaPair := []byte(*ssmOutput.Parameter.Value)
+	caPair := &crypto.CaSshKeyPair{}
+	if err := json.Unmarshal(rawCaPair, caPair); err != nil {
+		return nil, err
+	}
+	return caPair, nil
+
 }
 
-func LoadCAsFromSSM(ssmSvc ssmiface.SSMAPI, params *CaParamNames) (host []byte, user []byte, errs []error) {
-	errs = make([]error, 2)
-	if host, errs[0] = LoadCAFromSSM(ssmSvc, params.Host); errs[0] != nil {
-		host = nil
-	}
-	if user, errs[1] = LoadCAFromSSM(ssmSvc, params.User); errs[1] != nil {
-		user = nil
-	}
-	return
-}
-
-func SaveCAToSSM(ssmSvc ssmiface.SSMAPI, caContents []byte, caParamName string, ssmKmsKeyId string) error {
+func SaveCAToSSM(ssmSvc ssmiface.SSMAPI, caPair *crypto.CaSshKeyPair, caParamName string, ssmKmsKeyId string) error {
+	caPairJson, err := json.Marshal(caPair)
 	putParamInput := &ssm.PutParameterInput{
 		Name:        aws.String(caParamName),
 		Description: aws.String("CA Certificate used to sign ssh certificates"),
-		Value:       aws.String(string(caContents)),
+		Value:       aws.String(string(caPairJson)),
 		Type:        aws.String("SecureString"),
 	}
 	if len(ssmKmsKeyId) > 0 {
 		putParamInput.KeyId = aws.String(ssmKmsKeyId)
 	}
-	_, err := ssmSvc.PutParameter(putParamInput)
+	_, err = ssmSvc.PutParameter(putParamInput)
 	return err
 }
