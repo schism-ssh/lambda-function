@@ -2,7 +2,9 @@ package cloud
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -17,11 +19,19 @@ import (
 
 type mockSSMClient struct {
 	ssmiface.SSMAPI
+	ssmKmsKeyId string
 }
 
 func (m *mockSSMClient) PutParameter(input *ssm.PutParameterInput) (*ssm.PutParameterOutput, error) {
-	resp := &ssm.PutParameterOutput{}
-	return resp, nil
+	if strings.Contains(*input.Name, "schism-ca-key") {
+		if len(m.ssmKmsKeyId) >= 1 && len(*input.KeyId) < 1 {
+			return nil, fmt.Errorf("error with kms key: %s, wanted: %s", *input.KeyId, m.ssmKmsKeyId)
+		}
+		resp := &ssm.PutParameterOutput{}
+		return resp, nil
+	} else {
+		return nil, fmt.Errorf("error saving parameter: %v", *input.Name)
+	}
 }
 func (m *mockSSMClient) GetParameter(input *ssm.GetParameterInput) (*ssm.GetParameterOutput, error) {
 	resp := &ssm.GetParameterOutput{
@@ -42,6 +52,9 @@ type mockS3Client struct {
 }
 
 func (m *mockS3Client) PutObject(input *s3.PutObjectInput) (*s3.PutObjectOutput, error) {
+	if strings.Contains(*input.Key, "fails") {
+		return nil, fmt.Errorf("error saving object: %v", *input.Key)
+	}
 	return &s3.PutObjectOutput{}, nil
 }
 
@@ -61,14 +74,30 @@ func TestSaveCAToSSM(t *testing.T) {
 			name: "No KMS Key provided",
 			args: args{
 				ssmSvc: &mockSSMClient{},
-				caPair: &crypto.EncodedCaPair{
-					PrivateKey:    nil,
-					AuthorizedKey: nil,
-				},
+				caPair: &crypto.EncodedCaPair{},
 				caParamName: "schism-ca-key-host",
 				ssmKmsKeyId: "",
 			},
 			wantErr: false,
+		},
+		{
+			name: "KMS Key Provided",
+			args: args{
+				ssmSvc: &mockSSMClient{ssmKmsKeyId: "test-kms-key-id"},
+				caPair: &crypto.EncodedCaPair{},
+				caParamName: "schism-ca-key-user",
+				ssmKmsKeyId: "test-kms-key-id",
+			},
+		},
+		{
+			name: "Error saving to SSM",
+			args: args{
+				ssmSvc:      &mockSSMClient{},
+				caPair:      &crypto.EncodedCaPair{},
+				caParamName: "this-fails-to-save",
+				ssmKmsKeyId: "",
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -160,6 +189,14 @@ func TestSaveCertToS3(t *testing.T) {
 			},
 			want:    "users/1d2206f7294dedac0c991bbf3656db48a7e93cc913c7e467c4c9d2d6149ab83c.json",
 			wantErr: false,
+		},
+		{
+			name: "Save fails",
+			args: args{
+				s3Svc: &mockS3Client{}, s3Bucket: "schism-test",
+				s3Object: &protocol.SignedCertificateS3Object{CertificateType: "fail"},
+			},
+			want: "", wantErr: true,
 		},
 	}
 	for _, tt := range tests {

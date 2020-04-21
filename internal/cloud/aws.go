@@ -1,6 +1,7 @@
 package cloud
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -47,14 +48,20 @@ func SaveCAToSSM(ssmSvc ssmiface.SSMAPI, caPair *crypto.EncodedCaPair, caParamNa
 }
 
 func SaveCertToS3(s3Svc s3iface.S3API, s3Bucket string, s3Object *protocol.SignedCertificateS3Object) (string, error) {
+	jsonBody, err := json.Marshal(s3Object)
+	if err != nil {
+		return "", err
+	}
+
 	lookupKey := LookupKey(s3Object.Identity, s3Object.Principals)
 	objectKey := fmt.Sprintf("%ss/%s.json", s3Object.CertificateType, lookupKey)
+
 	putObjectIn := &s3.PutObjectInput{
-		Body:   nil,
+		Body:   bytes.NewReader(jsonBody),
 		Bucket: aws.String(s3Bucket),
 		Key:    aws.String(objectKey),
 	}
-	_, err := s3Svc.PutObject(putObjectIn)
+	_, err = s3Svc.PutObject(putObjectIn)
 	if err != nil {
 		return "", err
 	}
