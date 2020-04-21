@@ -73,8 +73,8 @@ func TestSaveCAToSSM(t *testing.T) {
 		{
 			name: "No KMS Key provided",
 			args: args{
-				ssmSvc: &mockSSMClient{},
-				caPair: &crypto.EncodedCaPair{},
+				ssmSvc:      &mockSSMClient{},
+				caPair:      &crypto.EncodedCaPair{},
 				caParamName: "schism-ca-key-host",
 				ssmKmsKeyId: "",
 			},
@@ -83,8 +83,8 @@ func TestSaveCAToSSM(t *testing.T) {
 		{
 			name: "KMS Key Provided",
 			args: args{
-				ssmSvc: &mockSSMClient{ssmKmsKeyId: "test-kms-key-id"},
-				caPair: &crypto.EncodedCaPair{},
+				ssmSvc:      &mockSSMClient{ssmKmsKeyId: "test-kms-key-id"},
+				caPair:      &crypto.EncodedCaPair{},
 				caParamName: "schism-ca-key-user",
 				ssmKmsKeyId: "test-kms-key-id",
 			},

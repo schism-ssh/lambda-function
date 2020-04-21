@@ -9,7 +9,7 @@ import (
 )
 
 const CaParamPrefixEnvVar = "SCHISM_CA_PARAM_PREFIX"
-const CertsS3BucketEnvVar  = "SCHISM_CERTS_S3_BUCKET"
+const CertsS3BucketEnvVar = "SCHISM_CERTS_S3_BUCKET"
 
 func CaParamPrefix() string {
 	caParamPrefix, keyFound := os.LookupEnv(CaParamPrefixEnvVar)
