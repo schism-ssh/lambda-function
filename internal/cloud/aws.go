@@ -2,11 +2,15 @@ package cloud
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/aws/aws-sdk-go/service/ssm/ssmiface"
 
+	"src.doom.fm/schism/commonLib/protocol"
 	"src.doom.fm/schism/lambda-function/internal/crypto"
 )
 
@@ -40,4 +44,19 @@ func SaveCAToSSM(ssmSvc ssmiface.SSMAPI, caPair *crypto.EncodedCaPair, caParamNa
 	}
 	_, err = ssmSvc.PutParameter(putParamInput)
 	return err
+}
+
+func SaveCertToS3(s3Svc s3iface.S3API, s3Bucket string, s3Object *protocol.SignedCertificateS3Object) (string, error) {
+	lookupKey := LookupKey(s3Object.Identity, s3Object.Principals)
+	objectKey := fmt.Sprintf("%ss/%s.json", s3Object.CertificateType, lookupKey)
+	putObjectIn := &s3.PutObjectInput{
+		Body:   nil,
+		Bucket: aws.String(s3Bucket),
+		Key:    aws.String(objectKey),
+	}
+	_, err := s3Svc.PutObject(putObjectIn)
+	if err != nil {
+		return "", err
+	}
+	return objectKey, nil
 }
