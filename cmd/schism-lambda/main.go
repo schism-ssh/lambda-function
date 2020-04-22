@@ -41,10 +41,10 @@ func init() {
 }
 
 func caKeysInit(ssmSvc ssmiface.SSMAPI) (err error) {
-	hostParamName := fmt.Sprintf("%s-host", caParamPrefix)
+	hostParamName := fmt.Sprintf("%s-%s", caParamPrefix, protocol.HostCertificate)
 	hostKeyPair, err = cloud.LoadCAFromSSM(ssmSvc, hostParamName)
 	if err != nil {
-		hostKeyPair, err = crypto.CreateCA()
+		hostKeyPair, err = crypto.CreateCA(protocol.HostCertificate)
 		if err != nil {
 			return
 		}
@@ -53,10 +53,10 @@ func caKeysInit(ssmSvc ssmiface.SSMAPI) (err error) {
 			return
 		}
 	}
-	userParamName := fmt.Sprintf("%s-user", caParamPrefix)
+	userParamName := fmt.Sprintf("%s-%s", caParamPrefix, protocol.UserCertificate)
 	userKeyPair, err = cloud.LoadCAFromSSM(ssmSvc, userParamName)
 	if err != nil {
-		userKeyPair, err = crypto.CreateCA()
+		userKeyPair, err = crypto.CreateCA(protocol.UserCertificate)
 		if err != nil {
 			return
 		}
@@ -84,7 +84,7 @@ func LambdaHandler(requestEvent protocol.RequestSSHCertLambdaPayload) (protocol.
 }
 
 func processEvent(event protocol.RequestSSHCertLambdaPayload, out *protocol.RequestSSHCertLambdaResponse) {
-	if event.CertificateType == "host" {
+	if event.CertificateType == protocol.HostCertificate {
 		out.LookupKey = "HOST_LOOKUP_KEY"
 	} else {
 		out.LookupKey = "USER_LOOKUP_KEY"
