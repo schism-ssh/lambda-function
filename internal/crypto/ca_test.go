@@ -3,28 +3,36 @@ package crypto
 import (
 	"strings"
 	"testing"
+
+	"src.doom.fm/schism/commonLib/protocol"
 )
 
 func TestCreateCA(t *testing.T) {
+	type args struct {
+		keyType string
+	}
 	tests := []struct {
 		name    string
+		args    args
 		want    *CaSshKeyPair
 		wantErr bool
 	}{
 		{
 			name:    "privateKey contains 'OPENSSH PRIVATE KEY'",
+			args:    args{keyType: protocol.HostCertificate},
 			want:    &CaSshKeyPair{PrivateKey: []byte("OPENSSH PRIVATE KEY")},
 			wantErr: false,
 		},
 		{
-			name:    "authorizedKey is not empty",
-			want:    &CaSshKeyPair{AuthorizedKey: []byte("ssh-ed25519")},
+			name:    "authorizedKey contains comment matching the keyType",
+			args:    args{keyType: protocol.UserCertificate},
+			want:    &CaSshKeyPair{AuthorizedKey: []byte(protocol.UserCertificate + " certificates")},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CreateCA()
+			got, err := CreateCA(tt.args.keyType)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateCA() error = %v, wantErr %v", err, tt.wantErr)
 				return
