@@ -44,7 +44,7 @@ func caKeysInit(ssmSvc ssmiface.SSMAPI) (err error) {
 	hostParamName := fmt.Sprintf("%s-%s", caParamPrefix, protocol.HostCertificate)
 	hostKeyPair, err = cloud.LoadCAFromSSM(ssmSvc, hostParamName)
 	if err != nil {
-		hostKeyPair, err = crypto.CreateCA(protocol.HostCertificate)
+		hostKeyPair, err = crypto.CreateCA()
 		if err != nil {
 			return
 		}
@@ -56,7 +56,7 @@ func caKeysInit(ssmSvc ssmiface.SSMAPI) (err error) {
 	userParamName := fmt.Sprintf("%s-%s", caParamPrefix, protocol.UserCertificate)
 	userKeyPair, err = cloud.LoadCAFromSSM(ssmSvc, userParamName)
 	if err != nil {
-		userKeyPair, err = crypto.CreateCA(protocol.UserCertificate)
+		userKeyPair, err = crypto.CreateCA()
 		if err != nil {
 			return
 		}
