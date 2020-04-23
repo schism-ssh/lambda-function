@@ -14,20 +14,10 @@ stages:
     GOARCH: amd64
     SCHISM_BIN: schism-lambda-${CI_COMMIT_REF_NAME}
 
-.go-cache:
-  cache:
-    key:
-      files:
-        - go.sum
-      prefix: "${CI_COMMIT_REF_SLUG}"
-    paths:
-      - vendor/
-
 fmt-vet-test:
   stage: test
   extends:
     - .global-vars
-    - .go-cache
   before_script:
     - go mod vendor
   script:
@@ -35,22 +25,23 @@ fmt-vet-test:
     - go vet ./...
     - go test -cover -coverprofile cover.out ./...
     - go tool cover -func cover.out | awk '/total:/ {print $1" "$2" "$3}; /.go/{print $0}'
+  artifacts:
+    paths:
+      - vendor/
+    expire_in: 1 hour
 
 compile:
   stage: build
   extends:
     - .global-vars
-    - .go-cache
   script:
-    - go build -ldflags "-extldflags '-static'" -o "${CI_PROJECT_DIR}/${SCHISM_BIN}" ./cmd...
+    - go build -mod=vendor -ldflags "-extldflags '-static'" -o "${CI_PROJECT_DIR}/${SCHISM_BIN}" ./cmd...
     - zip "${SCHISM_BIN}".zip "${SCHISM_BIN}"
   artifacts:
     paths:
       - ${SCHISM_BIN}.zip
       - .ci/publish
     expire_in: 1 hour
-  cache:
-    policy: pull
   dependencies:
     - fmt-vet-test
 
