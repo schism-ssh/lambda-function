@@ -10,17 +10,17 @@ import (
 func TestCreateCA(t *testing.T) {
 	tests := []struct {
 		name    string
-		want    *CaSshKeyPair
+		want    *EncodedCaPair
 		wantErr bool
 	}{
 		{
 			name:    "privateKey encoded PEM type PRIVATE KEY",
-			want:    &CaSshKeyPair{PrivateKey: []byte("-BEGIN PRIVATE KEY-")},
+			want:    &EncodedCaPair{PrivateKey: []byte("-BEGIN PRIVATE KEY-")},
 			wantErr: false,
 		},
 		{
 			name:    fmt.Sprintf("authorizedKey is of type %s", ssh.KeyAlgoED25519),
-			want:    &CaSshKeyPair{AuthorizedKey: []byte(ssh.KeyAlgoED25519)},
+			want:    &EncodedCaPair{AuthorizedKey: []byte(ssh.KeyAlgoED25519)},
 			wantErr: false,
 		},
 	}

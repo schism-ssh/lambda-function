@@ -9,14 +9,21 @@ import (
 
 const CAPrivKeyType = "PRIVATE KEY"
 
-type CaSshKeyPair struct {
+type EncodedCaPair struct {
 	PrivateKey    []byte `json:"private_key"`
 	AuthorizedKey []byte `json:"authorized_key"`
 }
 
-func CreateCA() (*CaSshKeyPair, error) {
-	rawPubKey, rawPrivKey, _ := ed25519.GenerateKey(nil)
+func (encoded *EncodedCaPair) Signer() (ssh.Signer, error) {
+	rawPrivKey, err := ssh.ParsePrivateKey(encoded.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	return rawPrivKey, nil
+}
 
+func CreateCA() (*EncodedCaPair, error) {
+	rawPubKey, rawPrivKey, _ := ed25519.GenerateKey(nil)
 	rawPemBytes, err := x509.MarshalPKCS8PrivateKey(rawPrivKey)
 	if err != nil {
 		return nil, err
@@ -26,12 +33,8 @@ func CreateCA() (*CaSshKeyPair, error) {
 		Bytes: rawPemBytes,
 	}
 
-	publicKey, err := ssh.NewPublicKey(rawPubKey)
-	if err != nil {
-		return nil, err
-	}
-
-	return &CaSshKeyPair{
+	publicKey, _ := ssh.NewPublicKey(rawPubKey)
+	return &EncodedCaPair{
 		PrivateKey:    pem.EncodeToMemory(pemKey),
 		AuthorizedKey: ssh.MarshalAuthorizedKey(publicKey),
 	}, nil
