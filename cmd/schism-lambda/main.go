@@ -26,6 +26,7 @@ var (
 
 	awsRegion     string
 	caParamPrefix string
+	certsS3Bucket string
 	ssmKmsKeyId   string
 
 	hostKeyPair *crypto.EncodedCaPair
@@ -37,6 +38,7 @@ func init() {
 	errLogger = internal.SchismLog(os.Stderr)
 
 	caParamPrefix = cloud.CaParamPrefix()
+	certsS3Bucket = cloud.CertsS3Bucket()
 
 	ssmKmsKeyId = os.Getenv("SCHISM_CA_KMS_KEY_ID")
 	awsRegion = os.Getenv("AWS_REGION")
