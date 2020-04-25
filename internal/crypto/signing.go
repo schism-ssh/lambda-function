@@ -52,5 +52,5 @@ func Sign(req *SigningReq, caKey ssh.Signer) (*ssh.Certificate, error) {
 
 func MarshalSignedCert(signedCert *ssh.Certificate) []byte {
 	marshaled := ssh.MarshalAuthorizedKey(signedCert)
-	return append(marshaled[:len(marshaled)-1], []byte(signedCert.KeyId)...)
+	return append(marshaled[:len(marshaled)-1], []byte(" "+signedCert.KeyId+"\n")...)
 }
