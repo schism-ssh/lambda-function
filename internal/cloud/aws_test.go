@@ -36,7 +36,7 @@ func (m *mockSSMClient) GetParameter(input *ssm.GetParameterInput) (*ssm.GetPara
 func TestSaveCAToSSM(t *testing.T) {
 	type args struct {
 		ssmSvc      ssmiface.SSMAPI
-		caPair      *crypto.CaSshKeyPair
+		caPair      *crypto.EncodedCaPair
 		caParamName string
 		ssmKmsKeyId string
 	}
@@ -49,7 +49,7 @@ func TestSaveCAToSSM(t *testing.T) {
 			name: "No KMS Key provided",
 			args: args{
 				ssmSvc: &mockSSMClient{},
-				caPair: &crypto.CaSshKeyPair{
+				caPair: &crypto.EncodedCaPair{
 					PrivateKey:    nil,
 					AuthorizedKey: nil,
 				},
@@ -76,7 +76,7 @@ func TestLoadCAFromSSM(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *crypto.CaSshKeyPair
+		want    *crypto.EncodedCaPair
 		wantErr bool
 	}{
 		{
@@ -85,7 +85,7 @@ func TestLoadCAFromSSM(t *testing.T) {
 				ssmSvc:    &mockSSMClient{},
 				paramName: "valid-param-name",
 			},
-			want:    &crypto.CaSshKeyPair{},
+			want:    &crypto.EncodedCaPair{},
 			wantErr: false,
 		},
 		{

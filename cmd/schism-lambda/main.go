@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 
+	"golang.org/x/crypto/ssh"
+
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/service/ssm/ssmiface"
 
@@ -26,8 +28,8 @@ var (
 	caParamPrefix string
 	ssmKmsKeyId   string
 
-	hostKeyPair *crypto.CaSshKeyPair
-	userKeyPair *crypto.CaSshKeyPair
+	hostKeyPair *crypto.EncodedCaPair
+	userKeyPair *crypto.EncodedCaPair
 )
 
 func init() {
@@ -41,7 +43,7 @@ func init() {
 }
 
 func caKeysInit(ssmSvc ssmiface.SSMAPI) (err error) {
-	hostParamName := fmt.Sprintf("%s-host", caParamPrefix)
+	hostParamName := fmt.Sprintf("%s-%s", caParamPrefix, protocol.HostCertificate)
 	hostKeyPair, err = cloud.LoadCAFromSSM(ssmSvc, hostParamName)
 	if err != nil {
 		hostKeyPair, err = crypto.CreateCA()
@@ -53,7 +55,7 @@ func caKeysInit(ssmSvc ssmiface.SSMAPI) (err error) {
 			return
 		}
 	}
-	userParamName := fmt.Sprintf("%s-user", caParamPrefix)
+	userParamName := fmt.Sprintf("%s-%s", caParamPrefix, protocol.UserCertificate)
 	userKeyPair, err = cloud.LoadCAFromSSM(ssmSvc, userParamName)
 	if err != nil {
 		userKeyPair, err = crypto.CreateCA()
@@ -84,11 +86,35 @@ func LambdaHandler(requestEvent protocol.RequestSSHCertLambdaPayload) (protocol.
 }
 
 func processEvent(event protocol.RequestSSHCertLambdaPayload, out *protocol.RequestSSHCertLambdaResponse) {
-	if event.CertificateType == "host" {
+	var certType uint32
+	var signer ssh.Signer
+	var err error
+	if event.CertificateType == protocol.HostCertificate {
+		certType = ssh.HostCert
+		signer, err = hostKeyPair.Signer()
 		out.LookupKey = "HOST_LOOKUP_KEY"
-	} else {
+	} else if event.CertificateType == protocol.UserCertificate {
+		certType = ssh.UserCert
+		signer, err = userKeyPair.Signer()
 		out.LookupKey = "USER_LOOKUP_KEY"
+	} else {
+		errLogger.Panicf("unknown CertificateType (%s) requested", event.CertificateType)
 	}
+	if err != nil {
+		errLogger.Panicf("%s\nerror parsing ssh.Signer from (%s)keyPair", err, event.CertificateType)
+	}
+	myReq := &crypto.SigningReq{
+		PublicKey:  []byte(event.PublicKey),
+		CertType:   certType,
+		Identity:   event.Identity,
+		Principals: event.Principals,
+		TTL:        300,
+	}
+	signedCert, err := crypto.Sign(myReq, signer)
+	if err != nil {
+		errLogger.Panicf("%s\nCert Signing went wrong, see logs for details", err)
+	}
+	logger.Printf("signedCert:\n\n%s", string(crypto.MarshalSignedCert(signedCert)))
 }
 
 func main() {
