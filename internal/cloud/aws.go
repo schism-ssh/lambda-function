@@ -10,7 +10,7 @@ import (
 	"src.doom.fm/schism/lambda-function/internal/crypto"
 )
 
-func LoadCAFromSSM(ssmSvc ssmiface.SSMAPI, paramName string) (*crypto.CaSshKeyPair, error) {
+func LoadCAFromSSM(ssmSvc ssmiface.SSMAPI, paramName string) (*crypto.EncodedCaPair, error) {
 	ssmOutput, err := ssmSvc.GetParameter(&ssm.GetParameterInput{
 		Name:           aws.String(paramName),
 		WithDecryption: aws.Bool(true),
@@ -19,7 +19,7 @@ func LoadCAFromSSM(ssmSvc ssmiface.SSMAPI, paramName string) (*crypto.CaSshKeyPa
 		return nil, err
 	}
 	rawCaPair := []byte(*ssmOutput.Parameter.Value)
-	caPair := &crypto.CaSshKeyPair{}
+	caPair := &crypto.EncodedCaPair{}
 	if err := json.Unmarshal(rawCaPair, caPair); err != nil {
 		return nil, err
 	}
@@ -27,7 +27,7 @@ func LoadCAFromSSM(ssmSvc ssmiface.SSMAPI, paramName string) (*crypto.CaSshKeyPa
 
 }
 
-func SaveCAToSSM(ssmSvc ssmiface.SSMAPI, caPair *crypto.CaSshKeyPair, caParamName string, ssmKmsKeyId string) error {
+func SaveCAToSSM(ssmSvc ssmiface.SSMAPI, caPair *crypto.EncodedCaPair, caParamName string, ssmKmsKeyId string) error {
 	caPairJson, err := json.Marshal(caPair)
 	putParamInput := &ssm.PutParameterInput{
 		Name:        aws.String(caParamName),

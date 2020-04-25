@@ -4,9 +4,8 @@ go 1.14
 
 require (
 	github.com/aws/aws-lambda-go v1.16.0
-	github.com/aws/aws-sdk-go v1.30.9
-	github.com/mikesmitty/edkey v0.0.0-20170222072505-3356ea4e686a
-	golang.org/x/crypto v0.0.0-20200414173820-0848c9571904
-	golang.org/x/sys v0.0.0-20200413165638-669c56c373c4 // indirect
-	src.doom.fm/schism/commonLib v0.3.0
+	github.com/aws/aws-sdk-go v1.30.10
+	golang.org/x/crypto v0.0.0-20200422194213-44a606286825
+	golang.org/x/sys v0.0.0-20200420163511-1957bb5e6d1f // indirect
+	src.doom.fm/schism/commonLib v0.3.2
 )

@@ -1,6 +1,8 @@
 package crypto
 
 import (
+	"fmt"
+	"golang.org/x/crypto/ssh"
 	"strings"
 	"testing"
 )
@@ -8,17 +10,17 @@ import (
 func TestCreateCA(t *testing.T) {
 	tests := []struct {
 		name    string
-		want    *CaSshKeyPair
+		want    *EncodedCaPair
 		wantErr bool
 	}{
 		{
-			name:    "privateKey contains 'OPENSSH PRIVATE KEY'",
-			want:    &CaSshKeyPair{PrivateKey: []byte("OPENSSH PRIVATE KEY")},
+			name:    "privateKey encoded PEM type PRIVATE KEY",
+			want:    &EncodedCaPair{PrivateKey: []byte("-BEGIN PRIVATE KEY-")},
 			wantErr: false,
 		},
 		{
-			name:    "authorizedKey is not empty",
-			want:    &CaSshKeyPair{AuthorizedKey: []byte("ssh-ed25519")},
+			name:    fmt.Sprintf("authorizedKey is of type %s", ssh.KeyAlgoED25519),
+			want:    &EncodedCaPair{AuthorizedKey: []byte(ssh.KeyAlgoED25519)},
 			wantErr: false,
 		},
 	}
