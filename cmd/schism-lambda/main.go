@@ -108,7 +108,7 @@ func processEvent(event protocol.RequestSSHCertLambdaPayload, out *protocol.Requ
 		CertType:   certType,
 		Identity:   event.Identity,
 		Principals: event.Principals,
-		TTL:        300,
+		TTL:        event.ValidityInterval,
 	}
 	signedCert, err := crypto.Sign(myReq, signer)
 	if err != nil {

@@ -12,10 +12,10 @@ type SigningReq struct {
 	CertType   uint32
 	Identity   string
 	Principals []string
-	TTL        int64
+	TTL        time.Duration
 }
 
-var oneMinAgo = uint64(time.Now().Unix() - 60)
+var oneMinAgo = uint64(time.Now().Add(-time.Minute).Unix())
 
 func certSerial() uint64 {
 	buff := make([]byte, 8)
@@ -24,7 +24,7 @@ func certSerial() uint64 {
 }
 
 func Sign(req *SigningReq, caKey ssh.Signer) (*ssh.Certificate, error) {
-	certExpiresAt := uint64(time.Now().Unix() + req.TTL)
+	certExpiresAt := uint64(time.Now().Add(req.TTL).Unix())
 	pubKey, err := LazyParseAuthorizedKey(req.PublicKey)
 	if err != nil {
 		return nil, err
