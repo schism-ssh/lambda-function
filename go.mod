@@ -3,10 +3,9 @@ module src.doom.fm/schism/lambda-function
 go 1.14
 
 require (
-	github.com/aws/aws-lambda-go v1.16.0
-	github.com/aws/aws-sdk-go v1.30.9
-	github.com/mikesmitty/edkey v0.0.0-20170222072505-3356ea4e686a
-	golang.org/x/crypto v0.0.0-20200414173820-0848c9571904
-	golang.org/x/sys v0.0.0-20200413165638-669c56c373c4 // indirect
-	src.doom.fm/schism/commonLib v0.3.0
+	github.com/aws/aws-lambda-go v1.17.0
+	github.com/aws/aws-sdk-go v1.32.0
+	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
+	golang.org/x/sys v0.0.0-20200523222454-059865788121 // indirect
+	src.doom.fm/schism/commonLib v0.5.0
 )

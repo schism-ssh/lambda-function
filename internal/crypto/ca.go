@@ -2,36 +2,39 @@ package crypto
 
 import (
 	"crypto/ed25519"
+	"crypto/x509"
 	"encoding/pem"
-	"github.com/mikesmitty/edkey"
 	"golang.org/x/crypto/ssh"
 )
 
-const CAPrivKeyType = "OPENSSH PRIVATE KEY"
+const CAPrivKeyType = "PRIVATE KEY"
 
-type CaSshKeyPair struct {
+type EncodedCaPair struct {
 	PrivateKey    []byte `json:"private_key"`
 	AuthorizedKey []byte `json:"authorized_key"`
+	Fingerprint   string `json:"fingerprint"`
 }
 
-func CreateCA() (*CaSshKeyPair, error) {
-	rawPubKey, rawPrivKey, _ := ed25519.GenerateKey(nil)
-
-	publicKey, err := ssh.NewPublicKey(rawPubKey)
+func (encoded *EncodedCaPair) Signer() (ssh.Signer, error) {
+	rawPrivKey, err := ssh.ParsePrivateKey(encoded.PrivateKey)
 	if err != nil {
 		return nil, err
 	}
+	return rawPrivKey, nil
+}
 
+func CreateCA() *EncodedCaPair {
+	rawPubKey, rawPrivKey, _ := ed25519.GenerateKey(nil)
+	rawPemBytes, _ := x509.MarshalPKCS8PrivateKey(rawPrivKey)
 	pemKey := &pem.Block{
 		Type:  CAPrivKeyType,
-		Bytes: edkey.MarshalED25519PrivateKey(rawPrivKey),
+		Bytes: rawPemBytes,
 	}
 
-	privateKey := pem.EncodeToMemory(pemKey)
-	publicAuthorizedKey := ssh.MarshalAuthorizedKey(publicKey)
-
-	return &CaSshKeyPair{
-		PrivateKey:    privateKey,
-		AuthorizedKey: publicAuthorizedKey,
-	}, nil
+	publicKey, _ := ssh.NewPublicKey(rawPubKey)
+	return &EncodedCaPair{
+		PrivateKey:    pem.EncodeToMemory(pemKey),
+		AuthorizedKey: ssh.MarshalAuthorizedKey(publicKey),
+		Fingerprint:   ssh.FingerprintSHA256(publicKey),
+	}
 }
