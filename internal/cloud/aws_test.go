@@ -37,12 +37,21 @@ func (m *mockSSMClient) GetParameter(input *ssm.GetParameterInput) (*ssm.GetPara
 	resp := &ssm.GetParameterOutput{
 		Parameter: &ssm.Parameter{
 			Name:  aws.String("valid-param-name"),
-			Value: aws.String("{\"private_key\":null,\"authorized_key\":null}"),
+			Value: aws.String(`{"private_key":null,"authorized_key":null}`),
 		},
 	}
-	if *input.Name == "valid-param-name" {
+	brokenResp := &ssm.GetParameterOutput{
+		Parameter: &ssm.Parameter{
+			Name:  aws.String("broken-param"),
+			Value: aws.String(`{"private_key": "IsThisValidBase64?"}`),
+		},
+	}
+	switch *input.Name {
+	case "valid-param-name":
 		return resp, nil
-	} else {
+	case "broken-param":
+		return brokenResp, nil
+	default:
 		return nil, errors.New("InvalidKeyId")
 	}
 }
@@ -137,6 +146,14 @@ func TestLoadCAFromSSM(t *testing.T) {
 			},
 			want: nil, wantErr: true,
 		},
+		{
+			name: "stored key is corrupt",
+			args: args{
+				ssmSvc:    &mockSSMClient{},
+				paramName: "broken-param",
+			},
+			want: nil, wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -152,12 +169,13 @@ func TestLoadCAFromSSM(t *testing.T) {
 	}
 }
 
-func TestSaveCertToS3(t *testing.T) {
+func TestSaveS3Object(t *testing.T) {
 	type args struct {
 		s3Svc    s3iface.S3API
-		s3Bucket string
-		s3Object *protocol.SignedCertificateS3Object
+		config   SchismConfig
+		s3Object protocol.S3Object
 	}
+	s3Bucket := "schism-test"
 	tests := []struct {
 		name    string
 		args    args
@@ -165,24 +183,14 @@ func TestSaveCertToS3(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "save host cert",
+			name: "Saving User Signed Certificate",
 			args: args{
-				s3Svc: &mockS3Client{}, s3Bucket: "schism-test",
-				s3Object: &protocol.SignedCertificateS3Object{
-					CertificateType: "host",
-					Identity:        "test.schism.example.com",
-					Principals:      []string{"test.schism.example.com"},
+				s3Svc: &mockS3Client{}, config: SchismConfig{
+					CertsS3Bucket: s3Bucket,
+					CertsS3Prefix: "",
 				},
-			},
-			want:    "hosts/73f386e91cac74186f60ba0aca0a410c234b3cfafb68f20541e4c5a828a1491b.json",
-			wantErr: false,
-		},
-		{
-			name: "save user cert",
-			args: args{
-				s3Svc: &mockS3Client{}, s3Bucket: "schism-test",
 				s3Object: &protocol.SignedCertificateS3Object{
-					CertificateType: "user",
+					CertificateType: protocol.UserCertificate,
 					Identity:        "user@test.schism.example.com",
 					Principals:      []string{"user1", "app_user"},
 				},
@@ -191,9 +199,25 @@ func TestSaveCertToS3(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Save fails",
+			name: "Saving Host CA Certificate",
 			args: args{
-				s3Svc: &mockS3Client{}, s3Bucket: "schism-test",
+				s3Svc: &mockS3Client{}, config: SchismConfig{
+					CertsS3Bucket: s3Bucket,
+					CertsS3Prefix: "",
+				},
+				s3Object: &protocol.CAPublicKeyS3Object{
+					CertificateType: protocol.HostCertificate,
+				},
+			},
+			want: "CA-Certs/host.json", wantErr: false,
+		},
+		{
+			name: "Saving fails",
+			args: args{
+				s3Svc: &mockS3Client{}, config: SchismConfig{
+					CertsS3Bucket: s3Bucket,
+					CertsS3Prefix: "",
+				},
 				s3Object: &protocol.SignedCertificateS3Object{CertificateType: "fail"},
 			},
 			want: "", wantErr: true,
@@ -201,13 +225,13 @@ func TestSaveCertToS3(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := SaveCertToS3(tt.args.s3Svc, tt.args.s3Bucket, tt.args.s3Object)
+			got, err := SaveS3Object(tt.args.s3Svc, tt.args.config, tt.args.s3Object)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("SaveCertToS3() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("SaveS3Object() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("SaveCertToS3() got = %v, want %v", got, tt.want)
+				t.Errorf("SaveS3Object() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

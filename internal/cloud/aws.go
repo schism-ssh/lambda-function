@@ -2,8 +2,9 @@ package cloud
 
 import (
 	"bytes"
+	"crypto/md5"
+	"encoding/base64"
 	"encoding/json"
-	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -12,10 +13,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/ssm/ssmiface"
 
 	"src.doom.fm/schism/commonLib/protocol"
-	"src.doom.fm/schism/lambda-function/internal/crypto"
+	schismCrypt "src.doom.fm/schism/lambda-function/internal/crypto"
 )
 
-func LoadCAFromSSM(ssmSvc ssmiface.SSMAPI, paramName string) (*crypto.EncodedCaPair, error) {
+func LoadCAFromSSM(ssmSvc ssmiface.SSMAPI, paramName string) (*schismCrypt.EncodedCaPair, error) {
 	ssmOutput, err := ssmSvc.GetParameter(&ssm.GetParameterInput{
 		Name:           aws.String(paramName),
 		WithDecryption: aws.Bool(true),
@@ -24,7 +25,7 @@ func LoadCAFromSSM(ssmSvc ssmiface.SSMAPI, paramName string) (*crypto.EncodedCaP
 		return nil, err
 	}
 	rawCaPair := []byte(*ssmOutput.Parameter.Value)
-	caPair := &crypto.EncodedCaPair{}
+	caPair := &schismCrypt.EncodedCaPair{}
 	if err := json.Unmarshal(rawCaPair, caPair); err != nil {
 		return nil, err
 	}
@@ -32,8 +33,11 @@ func LoadCAFromSSM(ssmSvc ssmiface.SSMAPI, paramName string) (*crypto.EncodedCaP
 
 }
 
-func SaveCAToSSM(ssmSvc ssmiface.SSMAPI, caPair *crypto.EncodedCaPair, caParamName string, ssmKmsKeyId string) error {
+func SaveCAToSSM(ssmSvc ssmiface.SSMAPI, caPair *schismCrypt.EncodedCaPair, caParamName string, ssmKmsKeyId string) error {
 	caPairJson, err := json.Marshal(caPair)
+	if err != nil {
+		return err
+	}
 	putParamInput := &ssm.PutParameterInput{
 		Name:        aws.String(caParamName),
 		Description: aws.String("CA Certificate used to sign ssh certificates"),
@@ -47,21 +51,23 @@ func SaveCAToSSM(ssmSvc ssmiface.SSMAPI, caPair *crypto.EncodedCaPair, caParamNa
 	return err
 }
 
-func SaveCertToS3(s3Svc s3iface.S3API, s3Bucket string, s3Object *protocol.SignedCertificateS3Object) (string, error) {
+func SaveS3Object(s3Svc s3iface.S3API, config SchismConfig, s3Object protocol.S3Object) (string, error) {
 	jsonBody, err := json.Marshal(s3Object)
 	if err != nil {
 		return "", err
 	}
 
-	lookupKey := LookupKey(s3Object.Identity, s3Object.Principals)
-	objectKey := fmt.Sprintf("%ss/%s.json", s3Object.CertificateType, lookupKey)
+	md5Bytes := md5.Sum(jsonBody)
+	contentMd5 := base64.StdEncoding.EncodeToString(md5Bytes[:])
 
-	putObjectIn := &s3.PutObjectInput{
-		Body:   bytes.NewReader(jsonBody),
-		Bucket: aws.String(s3Bucket),
-		Key:    aws.String(objectKey),
+	objectKey := s3Object.ObjectKey(config.CertsS3Prefix)
+	putObjectInput := s3.PutObjectInput{
+		Body:       bytes.NewReader(jsonBody),
+		Bucket:     aws.String(config.CertsS3Bucket),
+		Key:        aws.String(objectKey),
+		ContentMD5: aws.String(contentMd5),
 	}
-	_, err = s3Svc.PutObject(putObjectIn)
+	_, err = s3Svc.PutObject(&putObjectInput)
 	if err != nil {
 		return "", err
 	}
