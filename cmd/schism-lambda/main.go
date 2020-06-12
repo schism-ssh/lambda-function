@@ -18,6 +18,8 @@ import (
 	"src.doom.fm/schism/lambda-function/internal/crypto"
 )
 
+type caPairs map[string]*crypto.EncodedCaPair
+
 var (
 	invokeCount = 0
 
@@ -29,8 +31,7 @@ var (
 	certsS3Bucket string
 	ssmKmsKeyId   string
 
-	hostKeyPair *crypto.EncodedCaPair
-	userKeyPair *crypto.EncodedCaPair
+	keyPairs caPairs
 )
 
 func init() {
@@ -46,7 +47,7 @@ func init() {
 
 func caKeysInit(ssmSvc ssmiface.SSMAPI) (err error) {
 	hostParamName := fmt.Sprintf("%s-%s", caParamPrefix, protocol.HostCertificate)
-	hostKeyPair, err = cloud.LoadCAFromSSM(ssmSvc, hostParamName)
+	hostKeyPair, err := cloud.LoadCAFromSSM(ssmSvc, hostParamName)
 	if err != nil {
 		hostKeyPair, err = crypto.CreateCA()
 		if err != nil {
@@ -58,7 +59,7 @@ func caKeysInit(ssmSvc ssmiface.SSMAPI) (err error) {
 		}
 	}
 	userParamName := fmt.Sprintf("%s-%s", caParamPrefix, protocol.UserCertificate)
-	userKeyPair, err = cloud.LoadCAFromSSM(ssmSvc, userParamName)
+	userKeyPair, err := cloud.LoadCAFromSSM(ssmSvc, userParamName)
 	if err != nil {
 		userKeyPair, err = crypto.CreateCA()
 		if err != nil {
@@ -68,6 +69,10 @@ func caKeysInit(ssmSvc ssmiface.SSMAPI) (err error) {
 		if err != nil {
 			return
 		}
+	}
+	keyPairs = caPairs{
+		string(protocol.HostCertificate): hostKeyPair,
+		string(protocol.UserCertificate): userKeyPair,
 	}
 	return
 }
@@ -93,11 +98,11 @@ func processEvent(event protocol.RequestSSHCertLambdaPayload, out *protocol.Requ
 	var err error
 	if event.CertificateType == protocol.HostCertificate {
 		certType = ssh.HostCert
-		signer, err = hostKeyPair.Signer()
+		signer, err = keyPairs[string(protocol.HostCertificate)].Signer()
 		out.LookupKey = "HOST_LOOKUP_KEY"
 	} else if event.CertificateType == protocol.UserCertificate {
 		certType = ssh.UserCert
-		signer, err = userKeyPair.Signer()
+		signer, err = keyPairs[string(protocol.UserCertificate)].Signer()
 		out.LookupKey = "USER_LOOKUP_KEY"
 	} else {
 		errLogger.Panicf("unknown CertificateType (%s) requested", event.CertificateType)
