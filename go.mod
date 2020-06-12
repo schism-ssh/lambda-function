@@ -7,5 +7,5 @@ require (
 	github.com/aws/aws-sdk-go v1.32.0
 	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
 	golang.org/x/sys v0.0.0-20200523222454-059865788121 // indirect
-	src.doom.fm/schism/commonLib v0.4.4-0.20200612023552-bc624e7ac289
+	src.doom.fm/schism/commonLib v0.5.0
 )
