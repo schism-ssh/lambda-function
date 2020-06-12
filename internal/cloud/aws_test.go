@@ -187,7 +187,7 @@ func TestSaveS3Object(t *testing.T) {
 			args: args{
 				s3Svc: &mockS3Client{}, config: SchismConfig{
 					CertsS3Bucket: s3Bucket,
-					CertsS3Prefix: "",
+					CertsS3Prefix: "test/",
 				},
 				s3Object: &protocol.SignedCertificateS3Object{
 					CertificateType: protocol.UserCertificate,
@@ -195,29 +195,21 @@ func TestSaveS3Object(t *testing.T) {
 					Principals:      []string{"user1", "app_user"},
 				},
 			},
-			want:    "users/1d2206f7294dedac0c991bbf3656db48a7e93cc913c7e467c4c9d2d6149ab83c.json",
+			want:    "test/users/1d2206f7294dedac0c991bbf3656db48a7e93cc913c7e467c4c9d2d6149ab83c.json",
 			wantErr: false,
 		},
 		{
 			name: "Saving Host CA Certificate",
 			args: args{
-				s3Svc: &mockS3Client{}, config: SchismConfig{
-					CertsS3Bucket: s3Bucket,
-					CertsS3Prefix: "",
-				},
-				s3Object: &protocol.CAPublicKeyS3Object{
-					CertificateType: protocol.HostCertificate,
-				},
+				s3Svc: &mockS3Client{}, config: SchismConfig{CertsS3Bucket: s3Bucket},
+				s3Object: &protocol.CAPublicKeyS3Object{CertificateType: protocol.HostCertificate},
 			},
-			want: "CA-Certs/host.json", wantErr: false,
+			want: "CA-Pubkeys/host.json", wantErr: false,
 		},
 		{
 			name: "Saving fails",
 			args: args{
-				s3Svc: &mockS3Client{}, config: SchismConfig{
-					CertsS3Bucket: s3Bucket,
-					CertsS3Prefix: "",
-				},
+				s3Svc: &mockS3Client{}, config: SchismConfig{CertsS3Bucket: s3Bucket},
 				s3Object: &protocol.SignedCertificateS3Object{CertificateType: "fail"},
 			},
 			want: "", wantErr: true,
