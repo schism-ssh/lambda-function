@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 
@@ -95,17 +96,57 @@ func processEvent(event protocol.RequestSSHCertLambdaPayload, out *protocol.Requ
 	if event.CertificateType == protocol.HostCertificate {
 		certType = ssh.HostCert
 		signer, err = keyPairs[string(protocol.HostCertificate)].Signer()
-		out.LookupKey = "HOST_LOOKUP_KEY"
 	} else if event.CertificateType == protocol.UserCertificate {
 		certType = ssh.UserCert
 		signer, err = keyPairs[string(protocol.UserCertificate)].Signer()
-		out.LookupKey = "USER_LOOKUP_KEY"
 	} else {
 		errLogger.Panicf("unknown CertificateType (%s) requested", event.CertificateType)
 	}
 	if err != nil {
 		errLogger.Panicf("%s\nerror parsing ssh.Signer from (%s)keyPair", err, event.CertificateType)
 	}
+	out.LookupKey = string(protocol.GenerateLookupKey(event.Identity, event.Principals))
+	signedCert := eventSignCertificates(event, certType, err, signer)
+	err = eventUploadResults(event, signedCert)
+	if err != nil {
+		errLogger.Panicf("%s\nerror saving certificates to s3", err)
+	}
+}
+
+func eventUploadResults(event protocol.RequestSSHCertLambdaPayload, signedCert *ssh.Certificate) error {
+	s3Svc := commonLib.S3Client(awsRegion)
+	marshaledCert := crypto.MarshalSignedCert(signedCert)
+	oppositeCA := event.CertificateType.OppositeCA()
+	s3OppositeCaCert := &protocol.CAPublicKeyS3Object{
+		CertificateType: oppositeCA,
+		AuthorizedKey:   keyPairs[string(oppositeCA)].AuthorizedKey,
+	}
+	s3Cert := &protocol.SignedCertificateS3Object{
+		CertificateType:             event.CertificateType,
+		IssuedOn:                    time.Unix(int64(signedCert.ValidAfter), 0),
+		Identity:                    event.Identity,
+		Principals:                  event.Principals,
+		ValidityInterval:            event.ValidityInterval,
+		RawSignedCertificate:        marshaledCert,
+		OppositePublicCA:            s3OppositeCaCert.ObjectKey(schismConfig.CertsS3Prefix),
+		SignedCertificateEncryption: nil,
+	}
+	objKey, err := cloud.SaveS3Object(s3Svc, schismConfig, s3Cert)
+	if err != nil {
+		return err
+	} else {
+		logger.Printf("Saved Certificate to '%s'", objKey)
+	}
+	objKey, err = cloud.SaveS3Object(s3Svc, schismConfig, s3OppositeCaCert)
+	if err != nil {
+		return err
+	} else {
+		logger.Printf("Saved CA Authorized Key to '%s'", objKey)
+	}
+	return nil
+}
+
+func eventSignCertificates(event protocol.RequestSSHCertLambdaPayload, certType uint32, err error, signer ssh.Signer) *ssh.Certificate {
 	myReq := &crypto.SigningReq{
 		PublicKey:  []byte(event.PublicKey),
 		CertType:   certType,
@@ -117,7 +158,7 @@ func processEvent(event protocol.RequestSSHCertLambdaPayload, out *protocol.Requ
 	if err != nil {
 		errLogger.Panicf("%s\nCert Signing went wrong, see logs for details", err)
 	}
-	logger.Printf("signedCert:\n\n%s", string(crypto.MarshalSignedCert(signedCert)))
+	return signedCert
 }
 
 func main() {
