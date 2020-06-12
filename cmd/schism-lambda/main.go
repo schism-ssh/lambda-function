@@ -26,10 +26,8 @@ var (
 	logger    *log.Logger
 	errLogger *log.Logger
 
-	awsRegion     string
-	caParamPrefix string
-	certsS3Bucket string
-	ssmKmsKeyId   string
+	awsRegion    string
+	schismConfig cloud.SchismConfig
 
 	keyPairs caPairs
 )
@@ -38,34 +36,32 @@ func init() {
 	logger = internal.SchismLog(os.Stdout)
 	errLogger = internal.SchismLog(os.Stderr)
 
-	caParamPrefix = cloud.CaParamPrefix()
-	certsS3Bucket = cloud.CertsS3Bucket()
+	schismConfig.LoadEnv()
 
-	ssmKmsKeyId = os.Getenv("SCHISM_CA_KMS_KEY_ID")
 	awsRegion = os.Getenv("AWS_REGION")
 }
 
 func caKeysInit(ssmSvc ssmiface.SSMAPI) (err error) {
-	hostParamName := fmt.Sprintf("%s-%s", caParamPrefix, protocol.HostCertificate)
+	hostParamName := fmt.Sprintf("%s-%s", schismConfig.CaParamPrefix, protocol.HostCertificate)
 	hostKeyPair, err := cloud.LoadCAFromSSM(ssmSvc, hostParamName)
 	if err != nil {
 		hostKeyPair, err = crypto.CreateCA()
 		if err != nil {
 			return
 		}
-		err = cloud.SaveCAToSSM(ssmSvc, hostKeyPair, hostParamName, ssmKmsKeyId)
+		err = cloud.SaveCAToSSM(ssmSvc, hostKeyPair, hostParamName, schismConfig.CaSsmKmsKeyId)
 		if err != nil {
 			return
 		}
 	}
-	userParamName := fmt.Sprintf("%s-%s", caParamPrefix, protocol.UserCertificate)
+	userParamName := fmt.Sprintf("%s-%s", schismConfig.CaParamPrefix, protocol.UserCertificate)
 	userKeyPair, err := cloud.LoadCAFromSSM(ssmSvc, userParamName)
 	if err != nil {
 		userKeyPair, err = crypto.CreateCA()
 		if err != nil {
 			return
 		}
-		err = cloud.SaveCAToSSM(ssmSvc, userKeyPair, userParamName, ssmKmsKeyId)
+		err = cloud.SaveCAToSSM(ssmSvc, userKeyPair, userParamName, schismConfig.CaSsmKmsKeyId)
 		if err != nil {
 			return
 		}

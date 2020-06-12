@@ -1,87 +1,73 @@
-package cloud
+package cloud_test
 
 import (
 	"os"
+	"reflect"
 	"testing"
+
+	"src.doom.fm/schism/lambda-function/internal/cloud"
 )
 
-func TestCaParamPrefix(t *testing.T) {
-	tests := []struct {
-		name        string
-		envVarValue string
-		want        string
-	}{
-		{ // User CA Key
-			name:        "loaded from environment variable",
-			envVarValue: "schism-aio-example-",
-			want:        "schism-aio-example-",
-		},
-		{
-			name:        "loaded default prefix",
-			envVarValue: "",
-			want:        "schism-",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_ = os.Setenv(CaParamPrefixEnvVar, tt.envVarValue)
-			if got := CaParamPrefix(); got != tt.want {
-				t.Errorf("CaParamPrefix() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+type fields struct {
+	CaSsmKmsKeyId       string
+	CaParamPrefix       string
+	CertsS3Bucket       string
+	CertsS3Prefix       string
+	HostCertsAuthDomain string
 }
 
-func TestCertsS3Bucket(t *testing.T) {
-	tests := []struct {
-		name        string
-		envVarValue string
-		want        string
-	}{
-		{ // User CA Key
-			name:        "loaded from environment variable",
-			envVarValue: "schism-aio-signed-certificates",
-			want:        "schism-aio-signed-certificates",
-		},
-		{
-			name:        "loaded default prefix",
-			envVarValue: "",
-			want:        "schism-signed-certificates",
-		},
+var (
+	defaults = fields{
+		CaSsmKmsKeyId:       "",
+		CaParamPrefix:       cloud.CaParamPrefixDefault,
+		CertsS3Bucket:       cloud.CertsS3BucketDefault,
+		CertsS3Prefix:       "",
+		HostCertsAuthDomain: "",
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_ = os.Setenv(CertsS3BucketEnvVar, tt.envVarValue)
-			if got := CertsS3Bucket(); got != tt.want {
-				t.Errorf("CertsS3Bucket() = %v, want %v", got, tt.want)
-			}
-		})
+	customEnvSet = fields{
+		CaSsmKmsKeyId:       "test-key",
+		CaParamPrefix:       "param-prefix",
+		CertsS3Bucket:       "buckety-mc-bucketface",
+		CertsS3Prefix:       "schism-certs/",
+		HostCertsAuthDomain: "test.example.com",
 	}
-}
+)
 
-func TestLookupKey(t *testing.T) {
-	type args struct {
-		ident  string
-		princs []string
-	}
+func TestSchismConfig_LoadEnvOrDefault(t *testing.T) {
 	tests := []struct {
-		name string
-		args args
-		want string
+		name  string
+		wants fields
+		env   fields
 	}{
 		{
-			name: "sample host lookup key",
-			args: args{
-				ident:  "test.schism.example.com",
-				princs: []string{"test.schism.example.com"},
-			},
-			want: "73f386e91cac74186f60ba0aca0a410c234b3cfafb68f20541e4c5a828a1491b",
+			name:  "empty env loads defaults",
+			wants: defaults,
+			env:   fields{},
+		},
+		{
+			name:  "Loads from env correctly",
+			wants: customEnvSet,
+			env:   customEnvSet,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := LookupKey(tt.args.ident, tt.args.princs); got != tt.want {
-				t.Errorf("LookupKey() = %v, want %v", got, tt.want)
+			want := &cloud.SchismConfig{
+				CaSsmKmsKeyId:       tt.wants.CaSsmKmsKeyId,
+				CaParamPrefix:       tt.wants.CaParamPrefix,
+				CertsS3Bucket:       tt.wants.CertsS3Bucket,
+				CertsS3Prefix:       tt.wants.CertsS3Prefix,
+				HostCertsAuthDomain: tt.wants.HostCertsAuthDomain,
+			}
+			got := &cloud.SchismConfig{}
+			cloud.HelperMustSetEnv(t, os.Setenv(cloud.CaSsmKmsKeyIdEnvVar, tt.env.CaSsmKmsKeyId))
+			cloud.HelperMustSetEnv(t, os.Setenv(cloud.CaParamPrefixEnvVar, tt.env.CaParamPrefix))
+			cloud.HelperMustSetEnv(t, os.Setenv(cloud.CertsS3BucketEnvVar, tt.env.CertsS3Bucket))
+			cloud.HelperMustSetEnv(t, os.Setenv(cloud.CertsS3PrefixEnvVar, tt.env.CertsS3Prefix))
+			cloud.HelperMustSetEnv(t, os.Setenv(cloud.HostCertsAuthDomainEnvVar, tt.env.HostCertsAuthDomain))
+			got.LoadEnv()
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("LoadEnv() got = %+v, want %+v", got, want)
 			}
 		})
 	}
