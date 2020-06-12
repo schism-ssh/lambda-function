@@ -23,12 +23,9 @@ func (encoded *EncodedCaPair) Signer() (ssh.Signer, error) {
 	return rawPrivKey, nil
 }
 
-func CreateCA() (*EncodedCaPair, error) {
+func CreateCA() *EncodedCaPair {
 	rawPubKey, rawPrivKey, _ := ed25519.GenerateKey(nil)
-	rawPemBytes, err := x509.MarshalPKCS8PrivateKey(rawPrivKey)
-	if err != nil {
-		return nil, err
-	}
+	rawPemBytes, _ := x509.MarshalPKCS8PrivateKey(rawPrivKey)
 	pemKey := &pem.Block{
 		Type:  CAPrivKeyType,
 		Bytes: rawPemBytes,
@@ -39,5 +36,5 @@ func CreateCA() (*EncodedCaPair, error) {
 		PrivateKey:    pem.EncodeToMemory(pemKey),
 		AuthorizedKey: ssh.MarshalAuthorizedKey(publicKey),
 		Fingerprint:   ssh.FingerprintSHA256(publicKey),
-	}, nil
+	}
 }

@@ -7,8 +7,7 @@ import (
 	"testing"
 )
 
-var testCA, _ = crypto.CreateCA()
-var testSigner, _ = testCA.Signer()
+var testSigner, _ = crypto.CreateCA().Signer()
 
 func TestMarshalSignedCert(t *testing.T) {
 	var testReq = &crypto.SigningReq{
