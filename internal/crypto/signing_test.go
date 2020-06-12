@@ -50,6 +50,7 @@ func TestSign(t *testing.T) {
 		Principals: []string{"test.example.com"},
 		TTL:        300,
 	}
+	var brokenTestReq = &crypto.SigningReq{}
 	type args struct {
 		req   *crypto.SigningReq
 		caKey ssh.Signer
@@ -69,12 +70,23 @@ func TestSign(t *testing.T) {
 			wantSignature: true,
 			wantErr:       false,
 		},
+		{
+			name: "raises an error for an empty request",
+			args: args{
+				req: brokenTestReq,
+				caKey: testSigner,
+			},
+			wantSignature: false,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := crypto.Sign(tt.args.req, tt.args.caKey)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Sign() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			} else if err != nil {
 				return
 			}
 			if got == nil {
