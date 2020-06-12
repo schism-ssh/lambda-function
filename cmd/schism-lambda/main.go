@@ -120,6 +120,10 @@ func eventUploadResults(event protocol.RequestSSHCertLambdaPayload, signedCert *
 	s3OppositeCaCert := &protocol.CAPublicKeyS3Object{
 		CertificateType: oppositeCA,
 		AuthorizedKey:   keyPairs[string(oppositeCA)].AuthorizedKey,
+		KeyFingerprint:  keyPairs[string(oppositeCA)].Fingerprint,
+	}
+	if oppositeCA == protocol.HostCertificate {
+		s3OppositeCaCert.HostCertAuthDomain = schismConfig.HostCertsAuthDomain
 	}
 	s3Cert := &protocol.SignedCertificateS3Object{
 		CertificateType:             event.CertificateType,

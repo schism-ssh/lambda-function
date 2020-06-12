@@ -12,6 +12,7 @@ const CAPrivKeyType = "PRIVATE KEY"
 type EncodedCaPair struct {
 	PrivateKey    []byte `json:"private_key"`
 	AuthorizedKey []byte `json:"authorized_key"`
+	Fingerprint   string `json:"fingerprint"`
 }
 
 func (encoded *EncodedCaPair) Signer() (ssh.Signer, error) {
@@ -37,5 +38,6 @@ func CreateCA() (*EncodedCaPair, error) {
 	return &EncodedCaPair{
 		PrivateKey:    pem.EncodeToMemory(pemKey),
 		AuthorizedKey: ssh.MarshalAuthorizedKey(publicKey),
+		Fingerprint:   ssh.FingerprintSHA256(publicKey),
 	}, nil
 }
