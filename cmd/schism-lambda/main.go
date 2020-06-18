@@ -99,7 +99,7 @@ func processEvent(event protocol.RequestSSHCertLambdaPayload, out *protocol.Requ
 	if err != nil {
 		errLogger.Panicf("%s\nerror parsing ssh.Signer from (%s)keyPair", err, event.CertificateType)
 	}
-	out.LookupKey = string(protocol.GenerateLookupKey(event.Identity, event.Principals))
+	out.LookupKey = protocol.GenerateLookupKey(event.Identity, event.Principals, event.CertificateType).String()
 	signedCert := eventSignCertificates(event, certType, err, signer)
 	err = eventUploadResults(event, signedCert)
 	if err != nil {
