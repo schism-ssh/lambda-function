@@ -38,6 +38,8 @@ compile:
     - go build -mod=vendor -ldflags "-extldflags '-static'" -o "${CI_PROJECT_DIR}/${SCHISM_BIN}" ./cmd...
     - zip "${SCHISM_BIN}".zip "${SCHISM_BIN}"
   artifacts:
+    name: "compile_to_publish-$CI_COMMIT_REF_SLUG"
+    expose_as: compile_to_publish
     paths:
       - ${SCHISM_BIN}.zip
       - .ci/publish
