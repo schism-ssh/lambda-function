@@ -195,7 +195,7 @@ func TestSaveS3Object(t *testing.T) {
 					Principals:      []string{"user1", "app_user"},
 				},
 			},
-			want:    "test/user:1d2206f7294dedac0c991bbf3656db48a7e93cc913c7e467c4c9d2d6149ab83c.json",
+			want:    "test/Signed-Certs/user:1d2206f7294dedac0c991bbf3656db48a7e93cc913c7e467c4c9d2d6149ab83c.json",
 			wantErr: false,
 		},
 		{

@@ -35,5 +35,5 @@ gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v2 v2.2.2 h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
-src.doom.fm/schism/commonLib v0.5.2-0.20200618030751-31b0308212bd h1:V3ZmvEpZQIYdNs9F1uEogx5ZyWMexIZ9FciRJhb9N04=
-src.doom.fm/schism/commonLib v0.5.2-0.20200618030751-31b0308212bd/go.mod h1:GkH623qNRpxKeEgAfVJQ80zSGPJn7Zj9BE8ZzyCTVzA=
+src.doom.fm/schism/commonLib v0.5.2-0.20200619001556-03ad40f4795b h1:wFL3pXhW3ydH+jhMtOiTiQYjvRPlGe8NcGl311CeHB4=
+src.doom.fm/schism/commonLib v0.5.2-0.20200619001556-03ad40f4795b/go.mod h1:GkH623qNRpxKeEgAfVJQ80zSGPJn7Zj9BE8ZzyCTVzA=
