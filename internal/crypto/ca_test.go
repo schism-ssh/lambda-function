@@ -10,16 +10,16 @@ import (
 
 func TestCreateCA(t *testing.T) {
 	tests := []struct {
-		name    string
-		want    *EncodedCaPair
+		name string
+		want *EncodedCaPair
 	}{
 		{
-			name:    "privateKey encoded PEM type PRIVATE KEY",
-			want:    &EncodedCaPair{PrivateKey: []byte("-BEGIN PRIVATE KEY-")},
+			name: "privateKey encoded PEM type PRIVATE KEY",
+			want: &EncodedCaPair{PrivateKey: []byte("-BEGIN PRIVATE KEY-")},
 		},
 		{
-			name:    fmt.Sprintf("authorizedKey is of type %s", ssh.KeyAlgoED25519),
-			want:    &EncodedCaPair{AuthorizedKey: []byte(ssh.KeyAlgoED25519)},
+			name: fmt.Sprintf("authorizedKey is of type %s", ssh.KeyAlgoED25519),
+			want: &EncodedCaPair{AuthorizedKey: []byte(ssh.KeyAlgoED25519)},
 		},
 	}
 	for _, tt := range tests {

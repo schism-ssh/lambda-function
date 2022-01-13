@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"src.doom.fm/schism/lambda-function/internal/cloud"
+	"code.agarg.me/schism/lambda-function/internal/cloud"
 )
 
 type fields struct {

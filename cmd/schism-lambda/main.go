@@ -9,14 +9,15 @@ import (
 	"golang.org/x/crypto/ssh"
 
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/ssm/ssmiface"
 
-	"src.doom.fm/schism/commonLib"
-	"src.doom.fm/schism/commonLib/protocol"
+	"code.agarg.me/schism/commonLib"
+	"code.agarg.me/schism/commonLib/protocol"
 
-	"src.doom.fm/schism/lambda-function/internal"
-	"src.doom.fm/schism/lambda-function/internal/cloud"
-	"src.doom.fm/schism/lambda-function/internal/crypto"
+	"code.agarg.me/schism/lambda-function/internal"
+	"code.agarg.me/schism/lambda-function/internal/cloud"
+	"code.agarg.me/schism/lambda-function/internal/crypto"
 )
 
 type caPairs map[string]*crypto.EncodedCaPair
@@ -42,7 +43,7 @@ func init() {
 	awsRegion = os.Getenv("AWS_REGION")
 }
 
-func caKeysInit(ssmSvc ssmiface.SSMAPI) (err error) {
+func caKeysInit(ssmSvc ssmiface.SSMAPI, s3Svc s3iface.S3API) (err error) {
 	hostParamName := fmt.Sprintf("%s-%s", schismConfig.CaParamPrefix, protocol.HostCertificate)
 	hostKeyPair, err := cloud.LoadCAFromSSM(ssmSvc, hostParamName)
 	if err != nil {
@@ -69,9 +70,8 @@ func caKeysInit(ssmSvc ssmiface.SSMAPI) (err error) {
 }
 
 func LambdaHandler(requestEvent protocol.RequestSSHCertLambdaPayload) (protocol.RequestSSHCertLambdaResponse, error) {
-	ssmClient := commonLib.SSMClient(awsRegion)
-	if err := caKeysInit(ssmClient); err != nil {
-		errLogger.Printf("Error initializing the CA keys: %v", err.Error())
+	if err := caKeysInit(commonLib.SSMClient(awsRegion), commonLib.S3Client(awsRegion)); err != nil {
+		errLogger.Printf("Error initializing the CA keys: %s", err)
 	}
 
 	invokeCount = invokeCount + 1
@@ -99,7 +99,7 @@ func processEvent(event protocol.RequestSSHCertLambdaPayload, out *protocol.Requ
 	if err != nil {
 		errLogger.Panicf("%s\nerror parsing ssh.Signer from (%s)keyPair", err, event.CertificateType)
 	}
-	out.LookupKey = string(protocol.GenerateLookupKey(event.Identity, event.Principals))
+	out.LookupKey = protocol.GenerateLookupKey(event.Identity, event.Principals, event.CertificateType).String()
 	signedCert := eventSignCertificates(event, certType, err, signer)
 	err = eventUploadResults(event, signedCert)
 	if err != nil {
