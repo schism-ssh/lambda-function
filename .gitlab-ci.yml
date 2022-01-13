@@ -1,12 +1,12 @@
 default:
-  image: img.doom.fm/build/golang:latest-1.14.2-buster
+  image: reg.agarg.me/build/golang:latest-1.17.6-bullseye
   tags:
-    - shared-exec-docker
+    - agarg-public-projects
 
 stages:
   - test
   - build
-  - deploy
+  - release
 
 .global-vars:
   variables:
@@ -21,7 +21,9 @@ fmt-vet-test:
   before_script:
     - go mod vendor
   script:
-    - go fmt ./...
+    - fmt_output=$(find -name vendor -prune -o -type f -name '*.go' -print0 | xargs -0 gofmt -l)
+    - echo "${fmt_output}"
+    - test -z "${fmt_output}"
     - go vet ./...
     - go test -cover -coverprofile cover.out ./...
     - go tool cover -func cover.out | awk '/total:/ {print $1" "$2" "$3}; /.go/{print $0}'
@@ -38,6 +40,8 @@ compile:
     - go build -mod=vendor -ldflags "-extldflags '-static'" -o "${CI_PROJECT_DIR}/${SCHISM_BIN}" ./cmd...
     - zip "${SCHISM_BIN}".zip "${SCHISM_BIN}"
   artifacts:
+    name: "compile_to_publish-$CI_COMMIT_REF_SLUG"
+    expose_as: compile_to_publish
     paths:
       - ${SCHISM_BIN}.zip
       - .ci/publish
@@ -46,7 +50,7 @@ compile:
     - fmt-vet-test
 
 release:
-  stage: deploy
+  stage: release
   extends:
     - .global-vars
   variables:

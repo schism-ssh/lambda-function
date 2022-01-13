@@ -1,8 +1,8 @@
 package crypto_test
 
 import (
+	"code.agarg.me/schism/lambda-function/internal/crypto"
 	"golang.org/x/crypto/ssh"
-	"src.doom.fm/schism/lambda-function/internal/crypto"
 	"testing"
 )
 

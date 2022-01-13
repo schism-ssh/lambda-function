@@ -13,8 +13,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/aws/aws-sdk-go/service/ssm/ssmiface"
 
-	"src.doom.fm/schism/commonLib/protocol"
-	"src.doom.fm/schism/lambda-function/internal/crypto"
+	"code.agarg.me/schism/commonLib/protocol"
+	"code.agarg.me/schism/lambda-function/internal/crypto"
 )
 
 type mockSSMClient struct {
@@ -61,7 +61,7 @@ type mockS3Client struct {
 }
 
 func (m *mockS3Client) PutObject(input *s3.PutObjectInput) (*s3.PutObjectOutput, error) {
-	if strings.Contains(*input.Key, "fails") {
+	if strings.Contains(*input.Key, "fail:") {
 		return nil, fmt.Errorf("error saving object: %v", *input.Key)
 	}
 	return &s3.PutObjectOutput{}, nil
@@ -195,7 +195,7 @@ func TestSaveS3Object(t *testing.T) {
 					Principals:      []string{"user1", "app_user"},
 				},
 			},
-			want:    "test/users/1d2206f7294dedac0c991bbf3656db48a7e93cc913c7e467c4c9d2d6149ab83c.json",
+			want:    "test/Signed-Certs/user:1d2206f7294dedac0c991bbf3656db48a7e93cc913c7e467c4c9d2d6149ab83c.json",
 			wantErr: false,
 		},
 		{

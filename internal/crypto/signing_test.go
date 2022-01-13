@@ -1,8 +1,8 @@
 package crypto_test
 
 import (
+	"code.agarg.me/schism/lambda-function/internal/crypto"
 	"golang.org/x/crypto/ssh"
-	"src.doom.fm/schism/lambda-function/internal/crypto"
 	"strings"
 	"testing"
 )
@@ -73,11 +73,11 @@ func TestSign(t *testing.T) {
 		{
 			name: "raises an error for an empty request",
 			args: args{
-				req: brokenTestReq,
+				req:   brokenTestReq,
 				caKey: testSigner,
 			},
 			wantSignature: false,
-			wantErr: true,
+			wantErr:       true,
 		},
 	}
 	for _, tt := range tests {
