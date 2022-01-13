@@ -13,8 +13,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/aws/aws-sdk-go/service/ssm/ssmiface"
 
-	"src.doom.fm/schism/commonLib/protocol"
-	"src.doom.fm/schism/lambda-function/internal/crypto"
+	"code.agarg.me/schism/commonLib/protocol"
+	"code.agarg.me/schism/lambda-function/internal/crypto"
 )
 
 type mockSSMClient struct {

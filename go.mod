@@ -1,11 +1,15 @@
-module src.doom.fm/schism/lambda-function
+module code.agarg.me/schism/lambda-function
 
-go 1.14
+go 1.17
 
 require (
-	github.com/aws/aws-lambda-go v1.17.0
-	github.com/aws/aws-sdk-go v1.32.3
+	code.agarg.me/schism/commonLib v0.6.2
+	github.com/aws/aws-lambda-go v1.28.0
+	github.com/aws/aws-sdk-go v1.42.33
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
-	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1 // indirect
-	src.doom.fm/schism/commonLib v0.5.2-0.20200619001556-03ad40f4795b
+)
+
+require (
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	golang.org/x/sys v0.0.0-20210423082822-04245dca01da // indirect
 )

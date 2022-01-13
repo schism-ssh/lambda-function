@@ -12,8 +12,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/aws/aws-sdk-go/service/ssm/ssmiface"
 
-	"src.doom.fm/schism/commonLib/protocol"
-	schismCrypt "src.doom.fm/schism/lambda-function/internal/crypto"
+	"code.agarg.me/schism/commonLib/protocol"
+	schismCrypt "code.agarg.me/schism/lambda-function/internal/crypto"
 )
 
 func LoadCAFromSSM(ssmSvc ssmiface.SSMAPI, paramName string) (*schismCrypt.EncodedCaPair, error) {
