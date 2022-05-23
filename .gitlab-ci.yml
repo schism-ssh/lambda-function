@@ -19,7 +19,7 @@ fmt-vet-test:
   extends:
     - .global-vars
   before_script:
-    - go get
+    - go get ./...
     - go mod vendor
   script:
     - fmt_output=$(find -name vendor -prune -o -type f -name '*.go' -print0 | xargs -0 gofmt -l)
